@@ -1,7 +1,7 @@
 # CLAUDE.md
 
 Spring Boot 4.1.2 · Java 25 · Maven (wrapper) · Web MVC, Validation, Actuator, Data JPA, PostgreSQL.
-Базовый пакет: `com.example.demo`.
+Базовый пакет: `com.example.eventsbooking`.
 
 ## Команды
 
@@ -31,7 +31,16 @@ setx MAVEN_OPTS "-Djavax.net.ssl.trustStoreType=Windows-ROOT"
 ## База данных
 
 Параметры берутся из переменных окружения (значения по умолчанию в `application.properties`):
-`DB_URL` (`jdbc:postgresql://localhost:5432/demo`), `DB_USERNAME` (`postgres`), `DB_PASSWORD` (`postgres`).
+`DB_URL` (`jdbc:postgresql://localhost:5432/eventsbooking`), `DB_USERNAME` (`postgres`), `DB_PASSWORD` (`postgres`).
+PostgreSQL поднимается через Docker Compose (`compose.yaml`, образ `postgres:17`, БД `eventsbooking`):
+
+```
+docker compose up -d        # запустить БД
+docker compose ps           # статус (healthy)
+docker compose down         # остановить (данные сохраняются в volume pgdata)
+docker compose down -v      # остановить и удалить данные
+```
+
 Для запуска приложения нужен работающий PostgreSQL. Тесты загрузки контекста идут без БД
 (см. `src/test/resources/application.properties`); тесты, которым нужна реальная БД, поднимай через Testcontainers.
 
