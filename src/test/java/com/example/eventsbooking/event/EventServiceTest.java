@@ -99,6 +99,18 @@ class EventServiceTest {
     }
 
     @Test
+    void updateRejectsCapacityBelowAlreadyBookedSeats() {
+        Event existing = new Event("Old", null, IN_A_WEEK, 5, 1L);
+        existing.book();
+        existing.book();
+        when(repository.findById(1L)).thenReturn(Optional.of(existing));
+
+        assertThatThrownBy(() -> service.update(1L, new EventRequest("Old", null, IN_A_WEEK, 1, 1L)))
+                .isInstanceOf(com.example.eventsbooking.common.ConflictException.class);
+        assertThat(existing.getCapacity()).isEqualTo(5);
+    }
+
+    @Test
     void deleteRemovesExistingEvent() {
         when(repository.existsById(1L)).thenReturn(true);
 

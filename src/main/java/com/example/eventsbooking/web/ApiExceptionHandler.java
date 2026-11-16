@@ -1,5 +1,6 @@
 package com.example.eventsbooking.web;
 
+import com.example.eventsbooking.common.ConflictException;
 import com.example.eventsbooking.event.EventNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,6 +42,13 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
     ProblemDetail handleEventNotFound(EventNotFoundException ex) {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
         problem.setTitle("Event not found");
+        return problem;
+    }
+
+    @ExceptionHandler(ConflictException.class)
+    ProblemDetail handleConflict(ConflictException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+        problem.setTitle(ex.getTitle());
         return problem;
     }
 

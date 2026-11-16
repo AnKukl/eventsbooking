@@ -6,6 +6,9 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.Version;
+
+import com.example.eventsbooking.common.ConflictException;
 
 import java.time.Instant;
 
@@ -32,6 +35,17 @@ public class Event {
     @Column(nullable = false)
     private long organizerId;
 
+    @Column(nullable = false)
+    private int bookedCount;
+
+    /**
+     * Версия для оптимистической блокировки. Hibernate добавляет {@code AND version = ?} в каждый UPDATE
+     * и увеличивает версию, поэтому две параллельные транзакции не могут обе записать изменение
+     * (например, занять последнее место), основанное на одном и том же прочитанном состоянии.
+     */
+    @Version
+    private long version;
+
     protected Event() {
         // for JPA
     }
@@ -40,7 +54,19 @@ public class Event {
         update(title, description, startsAt, capacity, organizerId);
     }
 
+    /** Занимает одно место. Меняет состояние события, а значит и версию — это и есть точка конкуренции. */
+    public void book() {
+        if (bookedCount >= capacity) {
+            throw new EventFullException(id);
+        }
+        bookedCount++;
+    }
+
     public void update(String title, String description, Instant startsAt, int capacity, long organizerId) {
+        if (capacity < bookedCount) {
+            throw new ConflictException("Capacity below bookings",
+                    "Capacity " + capacity + " is less than the " + bookedCount + " seats already booked");
+        }
         this.title = title;
         this.description = description;
         this.startsAt = startsAt;
@@ -70,5 +96,9 @@ public class Event {
 
     public long getOrganizerId() {
         return organizerId;
+    }
+
+    public int getBookedCount() {
+        return bookedCount;
     }
 }
