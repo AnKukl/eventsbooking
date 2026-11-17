@@ -51,19 +51,24 @@ public class BookingService {
     private final TransactionTemplate transaction;
     private final Clock clock;
     private final BookingProperties properties;
+    private final BookingEventPublisher publisher;
 
     public BookingService(EventRepository events, BookingRepository bookings,
-            PlatformTransactionManager transactionManager, Clock clock, BookingProperties properties) {
+            PlatformTransactionManager transactionManager, Clock clock, BookingProperties properties, BookingEventPublisher publisher) {
         this.events = events;
         this.bookings = bookings;
         this.transaction = new TransactionTemplate(transactionManager);
         this.clock = clock;
         this.properties = properties;
+        this.publisher = publisher;
     }
 
     public Booking book(long eventId, long userId) {
         try {
-            return inTransactionWithRetry(eventId, () -> bookOnce(eventId, userId));
+            Booking booking = inTransactionWithRetry(eventId, () -> bookOnce(eventId, userId));
+            // the transaction has committed here: only now may the world hear about the booking
+            publisher.publish(booking);
+            return booking;
         } catch (DataIntegrityViolationException e) {
             if (bookings.existsByEventIdAndUserIdAndStatus(eventId, userId, BookingStatus.ACTIVE)) {
                 throw new AlreadyBookedException(eventId, userId);

@@ -34,13 +34,17 @@ class BookingServiceTest {
     private EventRepository events;
     private BookingRepository bookings;
     private BookingService service;
+    private BookingEventPublisher publisher;
+    private PlatformTransactionManager txManager;
 
     @BeforeEach
     void setUp() {
         events = mock(EventRepository.class);
         bookings = mock(BookingRepository.class);
-        service = new BookingService(events, bookings, mock(PlatformTransactionManager.class),
-                Clock.fixed(START, ZoneOffset.UTC), new BookingProperties(Duration.ofHours(24)));
+        publisher = mock(BookingEventPublisher.class);
+        txManager = mock(PlatformTransactionManager.class);
+        service = new BookingService(events, bookings, txManager,
+                Clock.fixed(START, ZoneOffset.UTC), new BookingProperties(Duration.ofHours(24)), publisher);
     }
 
     @Test
@@ -113,6 +117,29 @@ class BookingServiceTest {
                 .thenThrow(new DataIntegrityViolationException("uq_bookings_event_user"));
 
         assertThatThrownBy(() -> service.book(1L, 10L)).isInstanceOf(AlreadyBookedException.class);
+    }
+
+    @Test
+    void successfulBookingPublishesEventAfterTheTransactionCommits() {
+        when(events.findById(1L)).thenReturn(Optional.of(event(2)));
+        when(bookings.saveAndFlush(any(Booking.class))).thenAnswer(returnsFirstArg());
+
+        Booking booking = service.book(1L, 10L);
+
+        var order = org.mockito.Mockito.inOrder(txManager, publisher);
+        order.verify(txManager).commit(any());
+        order.verify(publisher).publish(booking);
+    }
+
+    @Test
+    void failedBookingPublishesNothing() {
+        Event full = event(1);
+        full.book();
+        when(events.findById(1L)).thenReturn(Optional.of(full));
+
+        assertThatThrownBy(() -> service.book(1L, 10L)).isInstanceOf(EventFullException.class);
+
+        org.mockito.Mockito.verifyNoInteractions(publisher);
     }
 
     private static Event event(int capacity) {

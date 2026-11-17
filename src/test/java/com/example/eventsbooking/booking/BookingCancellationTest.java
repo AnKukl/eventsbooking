@@ -151,7 +151,7 @@ class BookingCancellationTest {
 
     private BookingService service(Duration notice) {
         return new BookingService(events, bookings, mock(PlatformTransactionManager.class),
-                CLOCK, new BookingProperties(notice));
+                CLOCK, new BookingProperties(notice), mock(BookingEventPublisher.class));
     }
 
     /** Creates an event (id 1) with one seat already booked and registers it in the mock repository. */
