@@ -12,7 +12,9 @@ import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.PlatformTransactionManager;
 
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
+import java.time.Clock;
+import java.time.Duration;
+import java.time.ZoneOffset;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -27,6 +29,8 @@ import static org.mockito.Mockito.when;
 
 class BookingServiceTest {
 
+    private static final Instant START = Instant.parse("2030-02-01T10:00:00Z");
+
     private EventRepository events;
     private BookingRepository bookings;
     private BookingService service;
@@ -35,7 +39,8 @@ class BookingServiceTest {
     void setUp() {
         events = mock(EventRepository.class);
         bookings = mock(BookingRepository.class);
-        service = new BookingService(events, bookings, mock(PlatformTransactionManager.class));
+        service = new BookingService(events, bookings, mock(PlatformTransactionManager.class),
+                Clock.fixed(START, ZoneOffset.UTC), new BookingProperties(Duration.ofHours(24)));
     }
 
     @Test
@@ -61,7 +66,7 @@ class BookingServiceTest {
     @Test
     void bookThrowsWhenUserAlreadyBookedTheEvent() {
         when(events.findById(1L)).thenReturn(Optional.of(event(5)));
-        when(bookings.existsByEventIdAndUserId(1L, 10L)).thenReturn(true);
+        when(bookings.existsByEventIdAndUserIdAndStatus(1L, 10L, BookingStatus.ACTIVE)).thenReturn(true);
 
         assertThatThrownBy(() -> service.book(1L, 10L)).isInstanceOf(AlreadyBookedException.class);
         verify(bookings, never()).saveAndFlush(any());
@@ -103,7 +108,7 @@ class BookingServiceTest {
     @Test
     void uniqueConstraintViolationIsReportedAsAlreadyBooked() {
         when(events.findById(1L)).thenAnswer(invocation -> Optional.of(event(5)));
-        when(bookings.existsByEventIdAndUserId(1L, 10L)).thenReturn(false, true);
+        when(bookings.existsByEventIdAndUserIdAndStatus(1L, 10L, BookingStatus.ACTIVE)).thenReturn(false, true);
         when(bookings.saveAndFlush(any(Booking.class)))
                 .thenThrow(new DataIntegrityViolationException("uq_bookings_event_user"));
 
@@ -111,7 +116,7 @@ class BookingServiceTest {
     }
 
     private static Event event(int capacity) {
-        Event event = new Event("Jazz night", null, Instant.now().plus(7, ChronoUnit.DAYS), capacity, 1L);
+        Event event = new Event("Jazz night", null, START, capacity, 1L);
         ReflectionTestUtils.setField(event, "id", 1L);
         return event;
     }

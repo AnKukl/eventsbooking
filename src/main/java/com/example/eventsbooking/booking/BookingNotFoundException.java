@@ -1,0 +1,8 @@
+package com.example.eventsbooking.booking;
+
+public class BookingNotFoundException extends RuntimeException {
+
+    public BookingNotFoundException(long bookingId) {
+        super("Booking with id " + bookingId + " not found");
+    }
+}

@@ -24,4 +24,9 @@ class BookingController {
     BookingResponse book(@PathVariable long eventId, @Valid @RequestBody BookingRequest request) {
         return BookingResponse.from(service.book(eventId, request.userId()));
     }
+
+    @PostMapping("/{bookingId}/cancel")
+    BookingResponse cancel(@PathVariable long eventId, @PathVariable long bookingId) {
+        return BookingResponse.from(service.cancel(eventId, bookingId));
+    }
 }

@@ -41,6 +41,20 @@ docker compose down         # остановить (данные сохраня�
 docker compose down -v      # остановить и удалить данные
 ```
 
+## Безопасность (JWT)
+
+Приложение — stateless API на Spring Security: `POST /api/auth/register`, `POST /api/auth/login`, дальше
+`Authorization: Bearer <token>`. Роли `USER` и `ORGANIZER`; создавать/менять/удалять мероприятия может только `ORGANIZER`,
+`/actuator/health` открыт, всё остальное — только с токеном (deny by default).
+
+Секрет подписи берётся **только** из переменной окружения `JWT_SECRET` (минимум 32 байта), значения по умолчанию нет —
+без неё приложение не стартует. Не коммить секрет и не логируй токены/пароли.
+
+```
+# PowerShell, на сессию (сгенерировать случайный секрет)
+$env:JWT_SECRET = [Convert]::ToBase64String((1..48 | ForEach-Object { Get-Random -Maximum 256 }) -as [byte[]])
+```
+
 Для запуска приложения нужен работающий PostgreSQL. Тесты загрузки контекста идут без БД
 (см. `src/test/resources/application.properties`); тесты, которым нужна реальная БД, поднимай через Testcontainers.
 

@@ -62,6 +62,14 @@ public class Event {
         bookedCount++;
     }
 
+    /** Возвращает место (отмена брони). Так же меняет версию, как и {@link #book()}. */
+    public void release() {
+        if (bookedCount <= 0) {
+            throw new IllegalStateException("Event " + id + " has no booked seats to release");
+        }
+        bookedCount--;
+    }
+
     public void update(String title, String description, Instant startsAt, int capacity, long organizerId) {
         if (capacity < bookedCount) {
             throw new ConflictException("Capacity below bookings",

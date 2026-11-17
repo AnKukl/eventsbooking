@@ -1,6 +1,10 @@
 package com.example.eventsbooking.event;
 
+import com.example.eventsbooking.security.SecurityConfig;
 import org.junit.jupiter.api.Test;
+import org.springframework.context.annotation.Import;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.mockito.ArgumentCaptor;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.data.domain.PageImpl;
@@ -33,6 +37,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(EventController.class)
+@Import(SecurityConfig.class)
+@WithMockUser(roles = "ORGANIZER")
 @TestConstructor(autowireMode = TestConstructor.AutowireMode.ALL)
 class EventControllerTest {
 
@@ -40,6 +46,9 @@ class EventControllerTest {
     private static final String PAST = Instant.now().minus(1, ChronoUnit.DAYS).toString();
 
     private final MockMvc mockMvc;
+
+    @MockitoBean
+    private JwtDecoder jwtDecoder;
 
     @MockitoBean
     private EventService service;
