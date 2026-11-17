@@ -1,22 +1,78 @@
 # eventsbooking
 
-Spring Boot 4 / Java 25 / PostgreSQL / Kafka. Команды и правила разработки — в [CLAUDE.md](CLAUDE.md),
-архитектурные решения — в [docs/decisions.md](docs/decisions.md).
+[![CI](https://github.com/AnKukl/eventsbooking/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/AnKukl/eventsbooking/actions/workflows/ci.yml)
 
-## Запуск
+REST API для мероприятий и бронирования мест: Spring Boot 4, Java 25, PostgreSQL, Kafka, JWT.
+Правила разработки и команды — [CLAUDE.md](CLAUDE.md), архитектурные решения — [docs/decisions.md](docs/decisions.md).
+
+## Запуск одной командой
 
 ```
-docker compose up -d            # PostgreSQL и Kafka
-$env:JWT_SECRET = "..."         # минимум 32 байта, см. CLAUDE.md
+# PowerShell: секрет на сессию (минимум 32 байта), без него compose не стартует
+$env:JWT_SECRET = [Convert]::ToBase64String((1..48 | ForEach-Object { Get-Random -Maximum 256 }) -as [byte[]])
+docker compose up -d --build
+curl.exe http://localhost:8080/actuator/health
+```
+
+Поднимаются `postgres`, `kafka` и `app` (многоэтапный [Dockerfile](Dockerfile): сборка на `eclipse-temurin:25-jdk`,
+запуск на `eclipse-temurin:25-jre` под непривилегированным пользователем). Если порт 8080 занят: `$env:APP_PORT = "8083"`.
+Секреты в образ не попадают: `JWT_SECRET` и пароль БД передаются только переменными окружения при запуске.
+Любая команда `docker compose` (в том числе `down`) требует заданный `JWT_SECRET`. Остановить: `docker compose down`
+(данные БД сохраняются), `docker compose down -v` (с удалением данных).
+
+Приложение на хосте (без контейнера для `app`):
+
+```
+docker compose up -d postgres kafka
+$env:JWT_SECRET = "..."
 .\mvnw.cmd spring-boot:run
 ```
 
-Kafka: `KAFKA_BOOTSTRAP_SERVERS` (по умолчанию `localhost:9092`).
+Тесты и сборка: `.\mvnw.cmd verify` (нужен Docker: Testcontainers поднимает PostgreSQL и Kafka).
 
-## Kafka: события бронирования
+## OpenAPI и Swagger UI
 
-После успешной брони публикуется `BookingCreated` в топик `booking-events`. Consumer (группа `notifications`)
-сохраняет запись в таблицу `notifications`; повторное сообщение с тем же `eventId` дубля не создаёт.
+После запуска (порт 8080 по умолчанию):
+
+- Swagger UI: <http://localhost:8080/swagger-ui.html>
+- OpenAPI JSON: <http://localhost:8080/v3/api-docs>
+
+Документация открыта без токена. Чтобы пробовать защищённые методы, получите токен через `POST /api/auth/login`
+и нажмите **Authorize** в Swagger UI.
+
+## Схема
+
+```mermaid
+flowchart LR
+    Client["1. Клиент<br/>(Swagger UI, curl)"] -->|"HTTP + Bearer JWT"| App["2. Приложение<br/>Spring Boot: events, bookings,<br/>auth, notifications"]
+    App -->|"JPA / Flyway<br/>users, events, bookings, notifications"| DB[("3. PostgreSQL")]
+    App -->|"BookingCreated<br/>после коммита брони"| Kafka{{"4. Kafka<br/>топик booking-events"}}
+    Kafka -->|"consumer, идемпотентно<br/>по eventId"| App
+```
+
+1. **Клиент** ходит в API с JWT, полученным при логине.
+2. **Приложение** — один Spring Boot сервис: мероприятия, бронирование (оптимистическая блокировка), аутентификация,
+   consumer уведомлений.
+3. **PostgreSQL** хранит всё состояние; схема меняется только миграциями Flyway.
+4. **Kafka** передаёт `BookingCreated`; consumer пишет уведомление в `notifications` и не создаёт дублей.
+
+## Эндпоинты
+
+| Метод | Путь | Доступ | Описание |
+|---|---|---|---|
+| POST | `/api/auth/register` | открыт | регистрация (`USER` или `ORGANIZER`) |
+| POST | `/api/auth/login` | открыт | вход, возвращает JWT |
+| GET | `/api/events?page=0&size=10` | любой пользователь с токеном | список мероприятий с пагинацией |
+| GET | `/api/events/{id}` | любой пользователь с токеном | одно мероприятие |
+| POST | `/api/events` | `ORGANIZER` | создать мероприятие |
+| PUT | `/api/events/{id}` | `ORGANIZER` | изменить мероприятие |
+| DELETE | `/api/events/{id}` | `ORGANIZER` | удалить мероприятие |
+| POST | `/api/events/{eventId}/bookings` | любой пользователь с токеном | забронировать место (`409`, если мест нет или бронь уже есть) |
+| POST | `/api/events/{eventId}/bookings/{bookingId}/cancel` | любой пользователь с токеном | отменить бронь не позже чем за 24 часа до начала |
+| GET | `/actuator/health` | открыт | состояние приложения |
+| GET | `/v3/api-docs`, `/swagger-ui.html` | открыт | OpenAPI и Swagger UI |
+
+Ошибки — `application/problem+json` (RFC 9457): 400 (валидация, со списком полей), 401, 403, 404, 409.
 
 ## Следующий шаг: dead letter topic
 
@@ -25,6 +81,6 @@ Kafka: `KAFKA_BOOTSTRAP_SERVERS` (по умолчанию `localhost:9092`).
 
 1. Заменить пропуск на `DeadLetterPublishingRecoverer` в `DefaultErrorHandler`: проблемная запись уходит в
    `booking-events.DLT` вместе с причиной ошибки в заголовках.
-2. Алерт на ненулевой лаг/рост `booking-events.DLT`.
+2. Алерт на рост `booking-events.DLT`.
 3. Инструмент или эндпоинт для повторной отправки записей из DLT после исправления причины.
 4. Для потери события между коммитом брони и отправкой — transactional outbox (см. decisions.md, запись 006).

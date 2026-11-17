@@ -1,0 +1,20 @@
+# Keep the build context small and keep secrets and local state out of the image
+.git
+.gitignore
+.idea
+.vscode
+.claude
+*.iml
+target
+HELP.md
+docs
+README.md
+CLAUDE.md
+compose.yaml
+Dockerfile
+.dockerignore
+.env
+.env.*
+*.pem
+*.key
+*.log
