@@ -81,8 +81,13 @@ public class BookingService {
      * Отменяет бронь и возвращает место. Отмена запрещена, если до начала события осталось меньше
      * {@code app.booking.cancellation-notice} (ровно столько — ещё можно).
      */
-    public Booking cancel(long eventId, long bookingId) {
-        return inTransactionWithRetry(eventId, () -> cancelOnce(eventId, bookingId));
+    /** Bookings of one user, newest first (the caller passes the authenticated user). */
+    public org.springframework.data.domain.Page<Booking> findMine(long userId, org.springframework.data.domain.Pageable pageable) {
+        return bookings.findByUserId(userId, pageable);
+    }
+
+    public Booking cancel(long eventId, long bookingId, long requesterId) {
+        return inTransactionWithRetry(eventId, () -> cancelOnce(eventId, bookingId, requesterId));
     }
 
     /**
@@ -103,6 +108,9 @@ public class BookingService {
 
     private Booking bookOnce(long eventId, long userId) {
         Event event = events.findById(eventId).orElseThrow(() -> new EventNotFoundException(eventId));
+        if (!event.getStartsAt().isAfter(clock.instant())) {
+            throw new EventAlreadyStartedException(eventId);
+        }
         if (bookings.existsByEventIdAndUserIdAndStatus(eventId, userId, BookingStatus.ACTIVE)) {
             throw new AlreadyBookedException(eventId, userId);
         }
@@ -111,10 +119,11 @@ public class BookingService {
         return bookings.saveAndFlush(new Booking(eventId, userId));
     }
 
-    private Booking cancelOnce(long eventId, long bookingId) {
+    private Booking cancelOnce(long eventId, long bookingId, long requesterId) {
         Event event = events.findById(eventId).orElseThrow(() -> new EventNotFoundException(eventId));
         Booking booking = bookings.findById(bookingId)
-                .filter(found -> found.getEventId() == eventId)
+                // someone else's booking looks exactly like a missing one: its existence is not revealed
+                .filter(found -> found.getEventId() == eventId && found.getUserId() == requesterId)
                 .orElseThrow(() -> new BookingNotFoundException(bookingId));
         if (booking.getStatus() == BookingStatus.CANCELLED) {
             throw new BookingAlreadyCancelledException(bookingId);

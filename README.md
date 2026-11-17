@@ -60,19 +60,23 @@ flowchart LR
 
 | Метод | Путь | Доступ | Описание |
 |---|---|---|---|
-| POST | `/api/auth/register` | открыт | регистрация (`USER` или `ORGANIZER`) |
+| POST | `/api/auth/register` | открыт | регистрация; всегда `USER`, а с верным `inviteCode` (`ORGANIZER_INVITE_CODE`) — `ORGANIZER` |
 | POST | `/api/auth/login` | открыт | вход, возвращает JWT |
+| GET | `/api/me` | любой пользователь с токеном | текущий пользователь (id, email, роль) |
 | GET | `/api/events?page=0&size=10` | любой пользователь с токеном | список мероприятий с пагинацией |
 | GET | `/api/events/{id}` | любой пользователь с токеном | одно мероприятие |
-| POST | `/api/events` | `ORGANIZER` | создать мероприятие |
-| PUT | `/api/events/{id}` | `ORGANIZER` | изменить мероприятие |
-| DELETE | `/api/events/{id}` | `ORGANIZER` | удалить мероприятие |
-| POST | `/api/events/{eventId}/bookings` | любой пользователь с токеном | забронировать место (`409`, если мест нет или бронь уже есть) |
-| POST | `/api/events/{eventId}/bookings/{bookingId}/cancel` | любой пользователь с токеном | отменить бронь не позже чем за 24 часа до начала |
+| POST | `/api/events` | `ORGANIZER` | создать мероприятие (организатор = текущий пользователь) |
+| PUT | `/api/events/{id}` | `ORGANIZER`, только автор | изменить мероприятие |
+| DELETE | `/api/events/{id}` | `ORGANIZER`, только автор | удалить мероприятие |
+| POST | `/api/events/{eventId}/bookings` | любой пользователь с токеном | забронировать место для текущего пользователя, тело не нужно (`409`: мест нет, бронь уже есть, событие началось) |
+| POST | `/api/events/{eventId}/bookings/{bookingId}/cancel` | любой пользователь с токеном | отменить свою бронь не позже чем за 24 часа до начала (чужая даёт `404`) |
+| GET | `/api/bookings/my?page=0&size=20` | любой пользователь с токеном | мои брони, новые сверху |
 | GET | `/actuator/health` | открыт | состояние приложения |
 | GET | `/v3/api-docs`, `/swagger-ui.html` | открыт | OpenAPI и Swagger UI |
 
-Ошибки — `application/problem+json` (RFC 9457): 400 (валидация, со списком полей), 401, 403, 404, 409.
+Ошибки — `application/problem+json` (RFC 9457): 400 (валидация, со списком полей), 401, 403, 404, 409. `503` с `Retry-After`, если недоступна база данных.
+
+**Для браузерного клиента:** CORS разрешён для origin из `CORS_ALLOWED_ORIGINS` (по умолчанию `http://localhost:5173` и `http://localhost:3000`), токен передаётся заголовком `Authorization: Bearer ...`. Организаторов регистрирует тот, кто знает `ORGANIZER_INVITE_CODE`: задайте его переменной окружения перед `docker compose up` (`$env:ORGANIZER_INVITE_CODE = "..."`), иначе роль `ORGANIZER` недоступна.
 
 ## Следующий шаг: dead letter topic
 

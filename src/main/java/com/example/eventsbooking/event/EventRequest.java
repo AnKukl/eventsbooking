@@ -12,6 +12,5 @@ public record EventRequest(
         @NotBlank @Size(max = 200) String title,
         @Size(max = 2000) String description,
         @NotNull @Future Instant startsAt,
-        @NotNull @Positive Integer capacity,
-        @NotNull Long organizerId) {
+        @NotNull @Positive Integer capacity) {
 }

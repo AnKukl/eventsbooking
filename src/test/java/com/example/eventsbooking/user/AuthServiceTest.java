@@ -37,7 +37,8 @@ class AuthServiceTest {
     void setUp() {
         users = mock(UserRepository.class);
         jwt = mock(JwtService.class);
-        service = new AuthService(users, encoder, jwt, Clock.fixed(NOW, ZoneOffset.UTC));
+        service = new AuthService(users, encoder, jwt, Clock.fixed(NOW, ZoneOffset.UTC),
+                new RegistrationProperties("invite-secret"));
         when(users.saveAndFlush(any(User.class))).thenAnswer(returnsFirstArg());
     }
 
@@ -45,7 +46,7 @@ class AuthServiceTest {
 
     @Test
     void registrationStoresBCryptHashAndNeverThePlainPassword() {
-        service.register(new RegisterRequest("alice@example.com", "s3cret-password", Role.USER));
+        service.register(new RegisterRequest("alice@example.com", "s3cret-password", null));
 
         User saved = savedUser();
         assertThat(saved.getPasswordHash()).startsWith("$2").isNotEqualTo("s3cret-password");
@@ -54,7 +55,7 @@ class AuthServiceTest {
 
     @Test
     void registrationNormalisesEmail() {
-        service.register(new RegisterRequest("  Alice@Example.COM ", "s3cret-password", Role.USER));
+        service.register(new RegisterRequest("  Alice@Example.COM ", "s3cret-password", null));
 
         assertThat(savedUser().getEmail()).isEqualTo("alice@example.com");
     }
@@ -67,15 +68,15 @@ class AuthServiceTest {
     }
 
     @Test
-    void registrationAcceptsOrganizerRole() {
-        service.register(new RegisterRequest("org@example.com", "s3cret-password", Role.ORGANIZER));
+    void registrationWithTheCorrectInviteCodeCreatesAnOrganizer() {
+        service.register(new RegisterRequest("org@example.com", "s3cret-password", "invite-secret"));
 
         assertThat(savedUser().getRole()).isEqualTo(Role.ORGANIZER);
     }
 
     @Test
     void registrationRecordsCreationTimeFromTheClock() {
-        service.register(new RegisterRequest("alice@example.com", "s3cret-password", Role.USER));
+        service.register(new RegisterRequest("alice@example.com", "s3cret-password", null));
 
         assertThat(savedUser().getCreatedAt()).isEqualTo(NOW);
     }
@@ -85,7 +86,7 @@ class AuthServiceTest {
         when(users.existsByEmail("alice@example.com")).thenReturn(true);
 
         assertThatThrownBy(() -> service.register(
-                new RegisterRequest("Alice@example.com", "s3cret-password", Role.USER)))
+                new RegisterRequest("Alice@example.com", "s3cret-password", null)))
                 .isInstanceOf(EmailAlreadyRegisteredException.class);
         verify(users, never()).saveAndFlush(any());
     }
@@ -95,8 +96,55 @@ class AuthServiceTest {
         when(users.saveAndFlush(any(User.class))).thenThrow(new DataIntegrityViolationException("users_email_key"));
 
         assertThatThrownBy(() -> service.register(
-                new RegisterRequest("alice@example.com", "s3cret-password", Role.USER)))
+                new RegisterRequest("alice@example.com", "s3cret-password", null)))
                 .isInstanceOf(EmailAlreadyRegisteredException.class);
+    }
+
+    @Test
+    void wrongInviteCodeIsDeniedAndNothingIsSaved() {
+        assertThatThrownBy(() -> service.register(new RegisterRequest("org@example.com", "s3cret-password", "guess")))
+                .isInstanceOf(org.springframework.security.access.AccessDeniedException.class);
+
+        verify(users, never()).saveAndFlush(any());
+    }
+
+    @Test
+    void inviteCodeIsRejectedWhenNoCodeIsConfiguredSoOrganizersCannotRegisterAtAll() {
+        for (String configured : new String[] {null, "", "  "}) {
+            AuthService closed = new AuthService(users, encoder, jwt, Clock.fixed(NOW, ZoneOffset.UTC),
+                    new RegistrationProperties(configured));
+
+            assertThatThrownBy(() -> closed.register(
+                    new RegisterRequest("org@example.com", "s3cret-password", "anything")))
+                    .isInstanceOf(org.springframework.security.access.AccessDeniedException.class);
+        }
+        verify(users, never()).saveAndFlush(any());
+    }
+
+    @Test
+    void blankInviteCodeMeansAPlainUser() {
+        service.register(new RegisterRequest("alice@example.com", "s3cret-password", "  "));
+
+        assertThat(savedUser().getRole()).isEqualTo(Role.USER);
+    }
+
+    @Test
+    void wrongInviteCodeDoesNotRevealWhetherTheEmailIsTaken() {
+        when(users.existsByEmail("taken@example.com")).thenReturn(true);
+
+        assertThatThrownBy(() -> service.register(new RegisterRequest("taken@example.com", "s3cret-password", "guess")))
+                .isInstanceOf(org.springframework.security.access.AccessDeniedException.class);
+    }
+
+    @Test
+    void profileReturnsTheUserAndRejectsUnknownIds() {
+        User user = new User("alice@example.com", "hash", Role.USER, NOW);
+        when(users.findById(5L)).thenReturn(java.util.Optional.of(user));
+        when(users.findById(6L)).thenReturn(java.util.Optional.empty());
+
+        assertThat(service.profile(5L)).isSameAs(user);
+        assertThatThrownBy(() -> service.profile(6L))
+                .isInstanceOf(org.springframework.security.authentication.BadCredentialsException.class);
     }
 
     // ---------- login ----------

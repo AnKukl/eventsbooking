@@ -37,7 +37,7 @@ class BookingCancellationTest {
     void cancellationIsAllowedExactly24HoursBeforeStart() {
         Booking booking = activeBooking(eventStartingAt(NOW.plus(Duration.ofHours(24))));
 
-        Booking cancelled = service(Duration.ofHours(24)).cancel(1L, 100L);
+        Booking cancelled = service(Duration.ofHours(24)).cancel(1L, 100L, 10L);
 
         assertThat(cancelled.getStatus()).isEqualTo(BookingStatus.CANCELLED);
         assertThat(booking.getStatus()).isEqualTo(BookingStatus.CANCELLED);
@@ -48,7 +48,7 @@ class BookingCancellationTest {
         Event event = eventStartingAt(NOW.plus(Duration.ofHours(23).plusMinutes(59)));
         Booking booking = activeBooking(event);
 
-        assertThatThrownBy(() -> service(Duration.ofHours(24)).cancel(1L, 100L))
+        assertThatThrownBy(() -> service(Duration.ofHours(24)).cancel(1L, 100L, 10L))
                 .isInstanceOf(CancellationTooLateException.class);
 
         assertThat(booking.getStatus()).isEqualTo(BookingStatus.ACTIVE);
@@ -60,7 +60,7 @@ class BookingCancellationTest {
     void cancellationIsRejectedOneNanosecondShortOf24Hours() {
         activeBooking(eventStartingAt(NOW.plus(Duration.ofHours(24)).minusNanos(1)));
 
-        assertThatThrownBy(() -> service(Duration.ofHours(24)).cancel(1L, 100L))
+        assertThatThrownBy(() -> service(Duration.ofHours(24)).cancel(1L, 100L, 10L))
                 .isInstanceOf(CancellationTooLateException.class);
     }
 
@@ -68,7 +68,7 @@ class BookingCancellationTest {
     void cancellationIsAllowed24Hours1MinuteBeforeStart() {
         activeBooking(eventStartingAt(NOW.plus(Duration.ofHours(24).plusMinutes(1))));
 
-        assertThat(service(Duration.ofHours(24)).cancel(1L, 100L).getStatus())
+        assertThat(service(Duration.ofHours(24)).cancel(1L, 100L, 10L).getStatus())
                 .isEqualTo(BookingStatus.CANCELLED);
     }
 
@@ -76,18 +76,18 @@ class BookingCancellationTest {
     void cancellationIsRejectedAfterTheEventHasStarted() {
         activeBooking(eventStartingAt(NOW.minus(Duration.ofHours(1))));
 
-        assertThatThrownBy(() -> service(Duration.ofHours(24)).cancel(1L, 100L))
+        assertThatThrownBy(() -> service(Duration.ofHours(24)).cancel(1L, 100L, 10L))
                 .isInstanceOf(CancellationTooLateException.class);
     }
 
     @Test
     void noticePeriodIsConfigurable() {
         activeBooking(eventStartingAt(NOW.plus(Duration.ofHours(47).plusMinutes(59))));
-        assertThatThrownBy(() -> service(Duration.ofHours(48)).cancel(1L, 100L))
+        assertThatThrownBy(() -> service(Duration.ofHours(48)).cancel(1L, 100L, 10L))
                 .isInstanceOf(CancellationTooLateException.class);
 
         activeBooking(eventStartingAt(NOW.plus(Duration.ofHours(48))));
-        assertThat(service(Duration.ofHours(48)).cancel(1L, 100L).getStatus())
+        assertThat(service(Duration.ofHours(48)).cancel(1L, 100L, 10L).getStatus())
                 .isEqualTo(BookingStatus.CANCELLED);
     }
 
@@ -99,7 +99,7 @@ class BookingCancellationTest {
         Booking booking = activeBooking(event);
         assertThat(event.getBookedCount()).isEqualTo(1);
 
-        service(Duration.ofHours(24)).cancel(1L, 100L);
+        service(Duration.ofHours(24)).cancel(1L, 100L, 10L);
 
         assertThat(booking.getStatus()).isEqualTo(BookingStatus.CANCELLED);
         assertThat(booking.getCancelledAt()).isEqualTo(NOW);
@@ -114,7 +114,7 @@ class BookingCancellationTest {
         booking.cancel(NOW.minusSeconds(60));
         int bookedBefore = event.getBookedCount();
 
-        assertThatThrownBy(() -> service(Duration.ofHours(24)).cancel(1L, 100L))
+        assertThatThrownBy(() -> service(Duration.ofHours(24)).cancel(1L, 100L, 10L))
                 .isInstanceOf(BookingAlreadyCancelledException.class);
         assertThat(event.getBookedCount()).isEqualTo(bookedBefore);
     }
@@ -126,7 +126,7 @@ class BookingCancellationTest {
         eventStartingAt(NOW.plus(Duration.ofDays(10)));
         when(bookings.findById(100L)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> service(Duration.ofHours(24)).cancel(1L, 100L))
+        assertThatThrownBy(() -> service(Duration.ofHours(24)).cancel(1L, 100L, 10L))
                 .isInstanceOf(BookingNotFoundException.class);
     }
 
@@ -135,7 +135,7 @@ class BookingCancellationTest {
         eventStartingAt(NOW.plus(Duration.ofDays(10)));
         when(bookings.findById(100L)).thenReturn(Optional.of(new Booking(2L, 10L)));
 
-        assertThatThrownBy(() -> service(Duration.ofHours(24)).cancel(1L, 100L))
+        assertThatThrownBy(() -> service(Duration.ofHours(24)).cancel(1L, 100L, 10L))
                 .isInstanceOf(BookingNotFoundException.class);
     }
 
@@ -143,8 +143,22 @@ class BookingCancellationTest {
     void cancellationOfBookingOnUnknownEventFails() {
         when(events.findById(99L)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> service(Duration.ofHours(24)).cancel(99L, 100L))
+        assertThatThrownBy(() -> service(Duration.ofHours(24)).cancel(99L, 100L, 10L))
                 .isInstanceOf(EventNotFoundException.class);
+    }
+
+    @Test
+    void cancellationByAnotherUserLooksLikeAMissingBookingAndChangesNothing() {
+        Event event = eventStartingAt(NOW.plus(Duration.ofDays(10)));
+        Booking booking = activeBooking(event);
+        int seatsBefore = event.getBookedCount();
+
+        assertThatThrownBy(() -> service(Duration.ofHours(24)).cancel(1L, 100L, 999L))
+                .isInstanceOf(BookingNotFoundException.class);
+
+        assertThat(booking.getStatus()).isEqualTo(BookingStatus.ACTIVE);
+        assertThat(event.getBookedCount()).isEqualTo(seatsBefore);
+        verify(bookings, never()).saveAndFlush(any());
     }
 
     // ---------- helpers ----------

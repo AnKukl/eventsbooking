@@ -47,7 +47,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 })
 @AutoConfigureMockMvc
 @Testcontainers
-@WithMockUser(roles = "USER")
+@WithMockUser(username = "1", roles = "USER")
 @TestConstructor(autowireMode = TestConstructor.AutowireMode.ALL)
 class BookingCancellationIntegrationTest {
 
@@ -90,7 +90,7 @@ class BookingCancellationIntegrationTest {
         Booking booking = bookingService.book(event.getId(), 1L);
         assertThat(eventRepository.findById(event.getId()).orElseThrow().getBookedCount()).isEqualTo(1);
 
-        Booking cancelled = bookingService.cancel(event.getId(), booking.getId());
+        Booking cancelled = bookingService.cancel(event.getId(), booking.getId(), 1L);
 
         assertThat(cancelled.getStatus()).isEqualTo(BookingStatus.CANCELLED);
         assertThat(cancelled.getCancelledAt()).isEqualTo(NOW);
@@ -103,7 +103,7 @@ class BookingCancellationIntegrationTest {
     void returnedSeatCanBeBookedByAnotherUser() {
         Event event = newEvent(1, NOW.plus(Duration.ofDays(10)));
         Booking first = bookingService.book(event.getId(), 1L);
-        bookingService.cancel(event.getId(), first.getId());
+        bookingService.cancel(event.getId(), first.getId(), 1L);
 
         Booking second = bookingService.book(event.getId(), 2L);
 
@@ -115,7 +115,7 @@ class BookingCancellationIntegrationTest {
     void userCanBookAgainAfterCancelling() {
         Event event = newEvent(5, NOW.plus(Duration.ofDays(10)));
         Booking first = bookingService.book(event.getId(), 1L);
-        bookingService.cancel(event.getId(), first.getId());
+        bookingService.cancel(event.getId(), first.getId(), 1L);
 
         Booking again = bookingService.book(event.getId(), 1L);
 
@@ -165,12 +165,52 @@ class BookingCancellationIntegrationTest {
         Booking booking = bookingService.book(event.getId(), 1L);
 
         List<Object> results = runInParallel(
-                () -> bookingService.cancel(event.getId(), booking.getId()),
-                () -> bookingService.cancel(event.getId(), booking.getId()));
+                () -> bookingService.cancel(event.getId(), booking.getId(), 1L),
+                () -> bookingService.cancel(event.getId(), booking.getId(), 1L));
 
         assertThat(results).filteredOn(r -> r instanceof Booking).hasSize(1);
         assertThat(results).filteredOn(r -> r instanceof BookingAlreadyCancelledException).hasSize(1);
         assertThat(eventRepository.findById(event.getId()).orElseThrow().getBookedCount()).isZero();
+    }
+
+    @Test
+    void anotherUserCannotCancelSomeonesBookingAndTheSeatStaysTaken() throws Exception {
+        Event event = newEvent(5, NOW.plus(Duration.ofDays(10)));
+        Booking booking = bookingService.book(event.getId(), 2L);   // belongs to user 2
+
+        mockMvc.perform(post(cancelUrl(event, booking)))            // the request is made by user 1
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.title").value("Booking not found"));
+
+        assertThat(bookingRepository.findById(booking.getId()).orElseThrow().getStatus())
+                .isEqualTo(BookingStatus.ACTIVE);
+        assertThat(eventRepository.findById(event.getId()).orElseThrow().getBookedCount()).isEqualTo(1);
+    }
+
+    @Test
+    void startedEventCannotBeBookedOverHttp() throws Exception {
+        Event event = newEvent(5, NOW.minus(Duration.ofHours(1)));
+
+        mockMvc.perform(post("/api/events/" + event.getId() + "/bookings"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.title").value("Event already started"));
+
+        assertThat(eventRepository.findById(event.getId()).orElseThrow().getBookedCount()).isZero();
+    }
+
+    @Test
+    void bookingOverHttpIsMadeForTheAuthenticatedUserAndListedInMyBookings() throws Exception {
+        Event event = newEvent(5, NOW.plus(Duration.ofDays(10)));
+
+        mockMvc.perform(post("/api/events/" + event.getId() + "/bookings"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.userId").value(1));
+        bookingService.book(event.getId(), 2L);   // someone else's booking must not show up
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/api/bookings/my"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[?(@.eventId==" + event.getId() + ")].userId").value(1))
+                .andExpect(jsonPath("$.content[?(@.userId==2)]").isEmpty());
     }
 
     private static String cancelUrl(Event event, Booking booking) {
@@ -178,7 +218,7 @@ class BookingCancellationIntegrationTest {
     }
 
     private Event newEvent(int capacity, Instant startsAt) {
-        return eventService.create(new EventRequest("Cancel event", null, startsAt, capacity, 1L));
+        return eventService.create(new EventRequest("Cancel event", null, startsAt, capacity), 1L);
     }
 
     private static List<Object> runInParallel(Callable<?>... tasks) throws Exception {

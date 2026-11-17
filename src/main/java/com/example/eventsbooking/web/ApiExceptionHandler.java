@@ -63,6 +63,27 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
         return problem;
     }
 
+    @ExceptionHandler(org.springframework.dao.OptimisticLockingFailureException.class)
+    ProblemDetail handleOptimisticLock(org.springframework.dao.OptimisticLockingFailureException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT,
+                "The resource was changed by someone else at the same time; reload it and try again");
+        problem.setTitle("Concurrent modification");
+        return problem;
+    }
+
+    /** Database (or its connection pool) is unavailable: a temporary condition, not a bug in the request. */
+    @ExceptionHandler({org.springframework.transaction.CannotCreateTransactionException.class,
+            org.springframework.dao.DataAccessResourceFailureException.class,
+            org.springframework.dao.QueryTimeoutException.class})
+    ResponseEntity<ProblemDetail> handleUnavailable(Exception ex) {
+        log.error("Dependency unavailable", ex);
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.SERVICE_UNAVAILABLE,
+                "The service is temporarily unavailable, try again in a few seconds");
+        problem.setTitle("Service unavailable");
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).header(HttpHeaders.RETRY_AFTER, "5")
+                .contentType(org.springframework.http.MediaType.APPLICATION_PROBLEM_JSON).body(problem);
+    }
+
     @ExceptionHandler(AuthenticationException.class)
     ProblemDetail handleAuthentication(AuthenticationException ex) {
         String detail = ex instanceof BadCredentialsException

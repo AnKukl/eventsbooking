@@ -15,6 +15,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.hamcrest.Matchers.containsString;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -25,7 +26,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(BookingController.class)
 @Import(SecurityConfig.class)
-@WithMockUser(roles = "USER")
+@WithMockUser(username = "7", roles = "USER")
 @TestConstructor(autowireMode = TestConstructor.AutowireMode.ALL)
 class BookingControllerTest {
 
@@ -55,13 +56,37 @@ class BookingControllerTest {
     }
 
     @Test
-    void bookRejectsMissingUserId() throws Exception {
-        book(5, "{}")
-                .andExpect(status().isBadRequest())
-                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
-                .andExpect(jsonPath("$.errors[?(@.field=='userId')]").exists());
+    void bookUsesTheAuthenticatedUserNotTheOneInTheBody() throws Exception {
+        Booking booking = new Booking(5L, 7L);
+        ReflectionTestUtils.setField(booking, "id", 100L);
+        when(service.book(5L, 7L)).thenReturn(booking);
 
-        verifyNoInteractions(service);
+        mockMvc.perform(post("/api/events/5/bookings").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"userId\": 99}"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.userId").value(7));
+
+        verify(service).book(5L, 7L);
+        verify(service, org.mockito.Mockito.never()).book(5L, 99L);
+    }
+
+    @Test
+    void bookWorksWithoutAnyBody() throws Exception {
+        Booking booking = new Booking(5L, 7L);
+        ReflectionTestUtils.setField(booking, "id", 101L);
+        when(service.book(5L, 7L)).thenReturn(booking);
+
+        mockMvc.perform(post("/api/events/5/bookings")).andExpect(status().isCreated());
+    }
+
+    @Test
+    void startedEventReturns409ProblemDetail() throws Exception {
+        when(service.book(5L, 7L)).thenThrow(new EventAlreadyStartedException(5L));
+
+        mockMvc.perform(post("/api/events/5/bookings"))
+                .andExpect(status().isConflict())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.title").value("Event already started"));
     }
 
     @Test
@@ -118,7 +143,7 @@ class BookingControllerTest {
         Booking booking = new Booking(5L, 7L);
         ReflectionTestUtils.setField(booking, "id", 100L);
         booking.cancel(java.time.Instant.parse("2030-01-01T10:00:00Z"));
-        when(service.cancel(5L, 100L)).thenReturn(booking);
+        when(service.cancel(5L, 100L, 7L)).thenReturn(booking);
 
         mockMvc.perform(post("/api/events/5/bookings/100/cancel"))
                 .andExpect(status().isOk())
@@ -129,7 +154,7 @@ class BookingControllerTest {
 
     @Test
     void tooLateCancellationReturns409ProblemDetail() throws Exception {
-        when(service.cancel(5L, 100L)).thenThrow(new CancellationTooLateException(java.time.Duration.ofHours(24)));
+        when(service.cancel(5L, 100L, 7L)).thenThrow(new CancellationTooLateException(java.time.Duration.ofHours(24)));
 
         mockMvc.perform(post("/api/events/5/bookings/100/cancel"))
                 .andExpect(status().isConflict())
@@ -141,7 +166,7 @@ class BookingControllerTest {
 
     @Test
     void alreadyCancelledBookingReturns409ProblemDetail() throws Exception {
-        when(service.cancel(5L, 100L)).thenThrow(new BookingAlreadyCancelledException(100L));
+        when(service.cancel(5L, 100L, 7L)).thenThrow(new BookingAlreadyCancelledException(100L));
 
         mockMvc.perform(post("/api/events/5/bookings/100/cancel"))
                 .andExpect(status().isConflict())
@@ -151,7 +176,7 @@ class BookingControllerTest {
 
     @Test
     void cancellingUnknownBookingReturns404ProblemDetail() throws Exception {
-        when(service.cancel(5L, 100L)).thenThrow(new BookingNotFoundException(100L));
+        when(service.cancel(5L, 100L, 7L)).thenThrow(new BookingNotFoundException(100L));
 
         mockMvc.perform(post("/api/events/5/bookings/100/cancel"))
                 .andExpect(status().isNotFound())

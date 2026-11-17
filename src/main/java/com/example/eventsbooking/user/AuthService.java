@@ -8,6 +8,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import org.springframework.security.access.AccessDeniedException;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.time.Clock;
 import java.util.Locale;
 
@@ -18,24 +21,28 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final Clock clock;
+    private final RegistrationProperties registration;
     /** Checked against when the email is unknown, so that response time does not reveal which emails exist. */
     private final String dummyHash;
 
-    public AuthService(UserRepository users, PasswordEncoder passwordEncoder, JwtService jwtService, Clock clock) {
+    public AuthService(UserRepository users, PasswordEncoder passwordEncoder, JwtService jwtService, Clock clock,
+            RegistrationProperties registration) {
         this.users = users;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
         this.clock = clock;
+        this.registration = registration;
         this.dummyHash = passwordEncoder.encode("timing-equalisation-only");
     }
 
     @Transactional
     public User register(RegisterRequest request) {
+        // checked first, so a wrong invite code cannot be used to probe which emails exist
+        Role role = roleFor(request.inviteCode());
         String email = normalize(request.email());
         if (users.existsByEmail(email)) {
             throw new EmailAlreadyRegisteredException();
         }
-        Role role = request.role() == null ? Role.USER : request.role();
         try {
             return users.saveAndFlush(
                     new User(email, passwordEncoder.encode(request.password()), role, clock.instant()));
@@ -53,6 +60,25 @@ public class AuthService {
             throw new BadCredentialsException("Invalid email or password");
         }
         return jwtService.issue(user);
+    }
+
+    /** The authenticated user's account; a token for a deleted user is no longer valid. */
+    public User profile(long userId) {
+        return users.findById(userId).orElseThrow(() -> new BadCredentialsException("Unknown user"));
+    }
+
+    private Role roleFor(String inviteCode) {
+        if (inviteCode == null || inviteCode.isBlank()) {
+            return Role.USER;
+        }
+        String expected = registration.organizerInviteCode();
+        boolean valid = expected != null && !expected.isBlank()
+                && MessageDigest.isEqual(expected.getBytes(StandardCharsets.UTF_8),
+                        inviteCode.getBytes(StandardCharsets.UTF_8));
+        if (!valid) {
+            throw new AccessDeniedException("Invalid organizer invite code");
+        }
+        return Role.ORGANIZER;
     }
 
     private static String normalize(String email) {

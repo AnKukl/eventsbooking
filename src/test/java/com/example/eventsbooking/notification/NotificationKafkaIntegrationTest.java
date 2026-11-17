@@ -61,7 +61,7 @@ class NotificationKafkaIntegrationTest {
     @Test
     void bookingProducesExactlyOneNotification() {
         Event event = eventService.create(new EventRequest("Kafka night", null,
-                Instant.now().plus(10, ChronoUnit.DAYS), 5, 1L));
+                Instant.now().plus(10, ChronoUnit.DAYS), 5), 1L);
 
         long bookingId = bookingService.book(event.getId(), 42L).getId();
 

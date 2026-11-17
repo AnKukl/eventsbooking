@@ -29,7 +29,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 })
 @AutoConfigureMockMvc
 @Testcontainers
-@WithMockUser(roles = "ORGANIZER")
+@WithMockUser(username = "1", roles = "ORGANIZER")
 @TestConstructor(autowireMode = TestConstructor.AutowireMode.ALL)
 class EventApiIntegrationTest {
 
@@ -92,9 +92,45 @@ class EventApiIntegrationTest {
                 .andExpect(jsonPath("$.content.length()").value(org.hamcrest.Matchers.greaterThanOrEqualTo(2)));
     }
 
+    @Test
+    void onlyTheOrganizerWhoCreatedTheEventMayChangeOrDeleteIt() throws Exception {
+        String location = mockMvc.perform(post("/api/events").contentType(MediaType.APPLICATION_JSON)
+                        .content(body("Owned", 10)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.organizerId").value(1))
+                .andReturn().getResponse().getHeader("Location");
+
+        var other = org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors
+                .user("2").roles("ORGANIZER");
+
+        mockMvc.perform(put(location).with(other).contentType(MediaType.APPLICATION_JSON).content(body("Hijacked", 99)))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(delete(location).with(other)).andExpect(status().isForbidden());
+
+        mockMvc.perform(get(location))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.title").value("Owned"))
+                .andExpect(jsonPath("$.capacity").value(10));
+    }
+
+    @Test
+    void organizerIdFromTheRequestBodyIsIgnored() throws Exception {
+        mockMvc.perform(post("/api/events").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"title\":\"Spoof\",\"startsAt\":\"" + FUTURE + "\",\"capacity\":5,\"organizerId\":99}"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.organizerId").value(1));
+    }
+
+    @Test
+    void sortingByAnInternalFieldIsRejectedAndUnknownOnesDoNotCrash() throws Exception {
+        mockMvc.perform(get("/api/events").param("sort", "foo")).andExpect(status().isBadRequest());
+        mockMvc.perform(get("/api/events").param("sort", "version")).andExpect(status().isBadRequest());
+        mockMvc.perform(get("/api/events").param("sort", "startsAt,desc")).andExpect(status().isOk());
+    }
+
     private static String body(String title, int capacity) {
         return """
-                {"title": "%s", "description": "d", "startsAt": "%s", "capacity": %d, "organizerId": 1}
+                {"title": "%s", "description": "d", "startsAt": "%s", "capacity": %d}
                 """.formatted(title, FUTURE, capacity);
     }
 }

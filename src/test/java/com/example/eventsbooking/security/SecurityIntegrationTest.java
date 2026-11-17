@@ -21,7 +21,9 @@ import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -41,7 +43,7 @@ class SecurityIntegrationTest {
     private static final String PASSWORD = "correct-horse-battery-staple";
     private static final String EVENT = """
             {"title": "Secured event", "description": "d", "startsAt": "2099-01-01T00:00:00Z",
-             "capacity": 10, "organizerId": 1}
+             "capacity": 10}
             """;
 
     @Container
@@ -130,6 +132,100 @@ class SecurityIntegrationTest {
     }
 
     @Test
+    void roleInTheRegistrationBodyDoesNotMakeAnOrganizer() throws Exception {
+        String selfRegistered = "{\"email\":\"sneaky@example.com\",\"password\":\"" + PASSWORD
+                + "\",\"role\":\"ORGANIZER\"}";
+        mockMvc.perform(post("/api/auth/register").contentType(MediaType.APPLICATION_JSON).content(selfRegistered))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.role").value("USER"));
+        String token = login("sneaky@example.com");
+
+        mockMvc.perform(post("/api/events").header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON).content(EVENT))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void wrongInviteCodeIsRefusedAndTheCorrectOneCreatesAnOrganizer() throws Exception {
+        mockMvc.perform(post("/api/auth/register").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"email\":\"guess@example.com\",\"password\":\"" + PASSWORD
+                                + "\",\"inviteCode\":\"wrong\"}"))
+                .andExpect(status().isForbidden());
+        Integer created = jdbc.queryForObject("select count(*) from users where email = ?", Integer.class,
+                "guess@example.com");
+        assertThat(created).isZero();
+
+        String organizerToken = registerAndLogin("invited@example.com", "ORGANIZER");
+        mockMvc.perform(post("/api/events").header(HttpHeaders.AUTHORIZATION, "Bearer " + organizerToken)
+                        .contentType(MediaType.APPLICATION_JSON).content(EVENT))
+                .andExpect(status().isCreated());
+    }
+
+    @Test
+    void meReturnsTheAccountBehindTheToken() throws Exception {
+        String token = registerAndLogin("me-check@example.com", "ORGANIZER");
+
+        mockMvc.perform(get("/api/me").header(HttpHeaders.AUTHORIZATION, "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.email").value("me-check@example.com"))
+                .andExpect(jsonPath("$.role").value("ORGANIZER"))
+                .andExpect(jsonPath("$.id").isNumber());
+    }
+
+    @Test
+    void eventsBelongToTheirCreatorAndBookingsToTheirOwner() throws Exception {
+        String ownerToken = registerAndLogin("owner@example.com", "ORGANIZER");
+        String rivalToken = registerAndLogin("rival@example.com", "ORGANIZER");
+        String aliceToken = registerAndLogin("alice-b@example.com", "USER");
+        String bobToken = registerAndLogin("bob-b@example.com", "USER");
+
+        String location = mockMvc.perform(post("/api/events").header(HttpHeaders.AUTHORIZATION, "Bearer " + ownerToken)
+                        .contentType(MediaType.APPLICATION_JSON).content(EVENT))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getHeader("Location");
+
+        // another organizer can neither edit nor delete it
+        mockMvc.perform(put(location).header(HttpHeaders.AUTHORIZATION, "Bearer " + rivalToken)
+                        .contentType(MediaType.APPLICATION_JSON).content(EVENT))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(delete(location).header(HttpHeaders.AUTHORIZATION, "Bearer " + rivalToken))
+                .andExpect(status().isForbidden());
+
+        // Alice books; the booking is hers whatever the body says
+        String booking = mockMvc.perform(post(location + "/bookings")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + aliceToken)
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"userId\": 424242}"))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        long aliceId = ((Number) JsonPath.read(booking, "$.userId")).longValue();
+        long bookingId = ((Number) JsonPath.read(booking, "$.id")).longValue();
+        assertThat(aliceId).isNotEqualTo(424242L);
+
+        // Bob cannot cancel it, and it does not appear in his list; Alice sees it
+        mockMvc.perform(post(location + "/bookings/" + bookingId + "/cancel")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + bobToken))
+                .andExpect(status().isNotFound());
+        mockMvc.perform(get("/api/bookings/my").header(HttpHeaders.AUTHORIZATION, "Bearer " + bobToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content.length()").value(0));
+        mockMvc.perform(get("/api/bookings/my").header(HttpHeaders.AUTHORIZATION, "Bearer " + aliceToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content.length()").value(1))
+                .andExpect(jsonPath("$.content[0].id").value(bookingId));
+        mockMvc.perform(post(location + "/bookings/" + bookingId + "/cancel")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + aliceToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("CANCELLED"));
+    }
+
+    private String login(String email) throws Exception {
+        String body = mockMvc.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON)
+                        .content(credentials(email, PASSWORD)))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        return body.replaceAll(".*\"accessToken\":\"([^\"]+)\".*", "$1");
+    }
+
+    @Test
     void healthEndpointIsPublic() throws Exception {
         mockMvc.perform(get("/actuator/health")).andExpect(status().isOk());
     }
@@ -169,7 +265,8 @@ class SecurityIntegrationTest {
     }
 
     private static String registration(String email, String role) {
-        return "{\"email\":\"" + email + "\",\"password\":\"" + PASSWORD + "\",\"role\":\"" + role + "\"}";
+        String invite = "ORGANIZER".equals(role) ? ",\"inviteCode\":\"test-invite-code\"" : "";
+        return "{\"email\":\"" + email + "\",\"password\":\"" + PASSWORD + "\"" + invite + "}";
     }
 
     private static String credentials(String email, String password) {

@@ -45,7 +45,7 @@ class EventSecurityTest {
 
     private static final String BODY = """
             {"title": "Jazz night", "description": "d", "startsAt": "2099-01-01T00:00:00Z",
-             "capacity": 50, "organizerId": 1}
+             "capacity": 50}
             """;
 
     private final MockMvc mockMvc;
@@ -125,7 +125,7 @@ class EventSecurityTest {
 
     @Test
     void organizerCanCreateEvents() throws Exception {
-        when(service.create(any(EventRequest.class))).thenReturn(event(5L));
+        when(service.create(any(EventRequest.class), org.mockito.ArgumentMatchers.eq(1L))).thenReturn(event(5L));
 
         mockMvc.perform(post("/api/events").with(organizer()).contentType(MediaType.APPLICATION_JSON).content(BODY))
                 .andExpect(status().isCreated())
@@ -134,7 +134,8 @@ class EventSecurityTest {
 
     @Test
     void organizerCanUpdateEvents() throws Exception {
-        when(service.update(org.mockito.ArgumentMatchers.eq(5L), any(EventRequest.class))).thenReturn(event(5L));
+        when(service.update(org.mockito.ArgumentMatchers.eq(5L), any(EventRequest.class),
+                org.mockito.ArgumentMatchers.eq(1L))).thenReturn(event(5L));
 
         mockMvc.perform(put("/api/events/5").with(organizer()).contentType(MediaType.APPLICATION_JSON).content(BODY))
                 .andExpect(status().isOk())
@@ -158,11 +159,11 @@ class EventSecurityTest {
     // ---------- helpers ----------
 
     private static RequestPostProcessor user() {
-        return jwt().authorities(new SimpleGrantedAuthority("ROLE_USER"));
+        return jwt().jwt(token -> token.subject("2")).authorities(new SimpleGrantedAuthority("ROLE_USER"));
     }
 
     private static RequestPostProcessor organizer() {
-        return jwt().authorities(new SimpleGrantedAuthority("ROLE_ORGANIZER"));
+        return jwt().jwt(token -> token.subject("1")).authorities(new SimpleGrantedAuthority("ROLE_ORGANIZER"));
     }
 
     private static Event event(long id) {

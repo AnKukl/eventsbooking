@@ -88,12 +88,28 @@ class AuthControllerTest {
     }
 
     @Test
-    void registerRejectsUnknownRole() throws Exception {
-        register("{\"email\":\"alice@example.com\",\"password\":\"s3cret-password\",\"role\":\"ADMIN\"}")
-                .andExpect(status().isBadRequest())
-                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON));
+    void roleInTheBodyIsIgnoredTheClientCannotChooseItsRole() throws Exception {
+        User user = new User("alice@example.com", "$2a$10$hash", Role.USER, Instant.parse("2030-01-01T10:00:00Z"));
+        when(service.register(any(RegisterRequest.class))).thenReturn(user);
 
-        verifyNoInteractions(service);
+        register("{\"email\":\"alice@example.com\",\"password\":\"s3cret-password\",\"role\":\"ORGANIZER\"}")
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.role").value("USER"));
+
+        var captor = org.mockito.ArgumentCaptor.forClass(RegisterRequest.class);
+        org.mockito.Mockito.verify(service).register(captor.capture());
+        org.assertj.core.api.Assertions.assertThat(captor.getValue().inviteCode()).isNull();
+    }
+
+    @Test
+    void wrongInviteCodeReturns403ProblemDetail() throws Exception {
+        when(service.register(any(RegisterRequest.class)))
+                .thenThrow(new org.springframework.security.access.AccessDeniedException("Invalid organizer invite code"));
+
+        register("{\"email\":\"alice@example.com\",\"password\":\"s3cret-password\",\"inviteCode\":\"guess\"}")
+                .andExpect(status().isForbidden())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.status").value(403));
     }
 
     @Test

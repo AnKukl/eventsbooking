@@ -44,7 +44,7 @@ class BookingServiceTest {
         publisher = mock(BookingEventPublisher.class);
         txManager = mock(PlatformTransactionManager.class);
         service = new BookingService(events, bookings, txManager,
-                Clock.fixed(START, ZoneOffset.UTC), new BookingProperties(Duration.ofHours(24)), publisher);
+                Clock.fixed(START.minus(Duration.ofDays(1)), ZoneOffset.UTC), new BookingProperties(Duration.ofHours(24)), publisher);
     }
 
     @Test
@@ -140,6 +140,37 @@ class BookingServiceTest {
         assertThatThrownBy(() -> service.book(1L, 10L)).isInstanceOf(EventFullException.class);
 
         org.mockito.Mockito.verifyNoInteractions(publisher);
+    }
+
+    @Test
+    void bookingAnEventThatHasAlreadyStartedIsRejected() {
+        Event started = new Event("Jazz night", null, START.minus(Duration.ofDays(2)), 5, 1L);
+        ReflectionTestUtils.setField(started, "id", 1L);
+        when(events.findById(1L)).thenReturn(Optional.of(started));
+
+        assertThatThrownBy(() -> service.book(1L, 10L)).isInstanceOf(EventAlreadyStartedException.class);
+
+        assertThat(started.getBookedCount()).isZero();
+        verify(bookings, never()).saveAndFlush(any());
+        org.mockito.Mockito.verifyNoInteractions(publisher);
+    }
+
+    @Test
+    void bookingAnEventStartingRightNowIsRejected() {
+        Event starting = new Event("Jazz night", null, START.minus(Duration.ofDays(1)), 5, 1L);
+        ReflectionTestUtils.setField(starting, "id", 1L);
+        when(events.findById(1L)).thenReturn(Optional.of(starting));   // clock = START - 1 day = startsAt
+
+        assertThatThrownBy(() -> service.book(1L, 10L)).isInstanceOf(EventAlreadyStartedException.class);
+    }
+
+    @Test
+    void findMineReturnsOnlyThePagedBookingsOfTheGivenUser() {
+        var pageable = org.springframework.data.domain.PageRequest.of(0, 10);
+        var page = new org.springframework.data.domain.PageImpl<>(java.util.List.of(new Booking(1L, 10L)), pageable, 1);
+        when(bookings.findByUserId(10L, pageable)).thenReturn(page);
+
+        assertThat(service.findMine(10L, pageable)).isSameAs(page);
     }
 
     private static Event event(int capacity) {

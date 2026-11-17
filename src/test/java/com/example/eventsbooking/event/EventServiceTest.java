@@ -38,7 +38,7 @@ class EventServiceTest {
     void createPersistsEventWithAllFields() {
         when(repository.save(any(Event.class))).thenAnswer(returnsFirstArg());
 
-        Event created = service.create(new EventRequest("Jazz night", "Live music", IN_A_WEEK, 50, 7L));
+        Event created = service.create(new EventRequest("Jazz night", "Live music", IN_A_WEEK, 50), 7L);
 
         assertThat(created.getTitle()).isEqualTo("Jazz night");
         assertThat(created.getDescription()).isEqualTo("Live music");
@@ -81,20 +81,20 @@ class EventServiceTest {
         when(repository.findById(1L)).thenReturn(Optional.of(existing));
         Instant later = IN_A_WEEK.plus(1, ChronoUnit.DAYS);
 
-        Event updated = service.update(1L, new EventRequest("New", "new", later, 20, 2L));
+        Event updated = service.update(1L, new EventRequest("New", "new", later, 20), 1L);
 
         assertThat(updated.getTitle()).isEqualTo("New");
         assertThat(updated.getDescription()).isEqualTo("new");
         assertThat(updated.getStartsAt()).isEqualTo(later);
         assertThat(updated.getCapacity()).isEqualTo(20);
-        assertThat(updated.getOrganizerId()).isEqualTo(2L);
+        assertThat(updated.getOrganizerId()).as("owner never changes").isEqualTo(1L);
     }
 
     @Test
     void updateThrowsWhenEventDoesNotExist() {
         when(repository.findById(99L)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> service.update(99L, new EventRequest("T", null, IN_A_WEEK, 1, 1L)))
+        assertThatThrownBy(() -> service.update(99L, new EventRequest("T", null, IN_A_WEEK, 1), 1L))
                 .isInstanceOf(EventNotFoundException.class);
     }
 
@@ -105,25 +105,51 @@ class EventServiceTest {
         existing.book();
         when(repository.findById(1L)).thenReturn(Optional.of(existing));
 
-        assertThatThrownBy(() -> service.update(1L, new EventRequest("Old", null, IN_A_WEEK, 1, 1L)))
+        assertThatThrownBy(() -> service.update(1L, new EventRequest("Old", null, IN_A_WEEK, 1), 1L))
                 .isInstanceOf(com.example.eventsbooking.common.ConflictException.class);
         assertThat(existing.getCapacity()).isEqualTo(5);
     }
 
     @Test
-    void deleteRemovesExistingEvent() {
-        when(repository.existsById(1L)).thenReturn(true);
+    void deleteRemovesTheEventOfItsOrganizer() {
+        Event existing = new Event("Old", null, IN_A_WEEK, 5, 1L);
+        when(repository.findById(1L)).thenReturn(Optional.of(existing));
 
-        service.delete(1L);
+        service.delete(1L, 1L);
 
-        verify(repository).deleteById(1L);
+        verify(repository).delete(existing);
     }
 
     @Test
     void deleteThrowsWhenEventDoesNotExist() {
-        when(repository.existsById(99L)).thenReturn(false);
+        when(repository.findById(99L)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> service.delete(99L)).isInstanceOf(EventNotFoundException.class);
-        verify(repository, never()).deleteById(any());
+        assertThatThrownBy(() -> service.delete(99L, 1L)).isInstanceOf(EventNotFoundException.class);
+        verify(repository, never()).delete(any());
+    }
+
+    // ---------- ownership: only the organizer who created an event may change it ----------
+
+    @Test
+    void updateByAnotherOrganizerIsDeniedAndChangesNothing() {
+        Event existing = new Event("Old", "old", IN_A_WEEK, 10, 1L);
+        when(repository.findById(1L)).thenReturn(Optional.of(existing));
+
+        assertThatThrownBy(() -> service.update(1L, new EventRequest("Hijacked", "x", IN_A_WEEK, 99), 2L))
+                .isInstanceOf(org.springframework.security.access.AccessDeniedException.class);
+
+        assertThat(existing.getTitle()).isEqualTo("Old");
+        assertThat(existing.getCapacity()).isEqualTo(10);
+    }
+
+    @Test
+    void deleteByAnotherOrganizerIsDeniedAndDeletesNothing() {
+        Event existing = new Event("Old", null, IN_A_WEEK, 5, 1L);
+        when(repository.findById(1L)).thenReturn(Optional.of(existing));
+
+        assertThatThrownBy(() -> service.delete(1L, 2L))
+                .isInstanceOf(org.springframework.security.access.AccessDeniedException.class);
+
+        verify(repository, never()).delete(any());
     }
 }

@@ -44,7 +44,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 })
 @AutoConfigureMockMvc
 @Testcontainers
-@WithMockUser(roles = "USER")
+@WithMockUser(username = "1", roles = "USER")
 @TestConstructor(autowireMode = TestConstructor.AutowireMode.ALL)
 class BookingConcurrencyIntegrationTest {
 
@@ -152,10 +152,11 @@ class BookingConcurrencyIntegrationTest {
         Event event = newEvent(1);
         String url = "/api/events/" + event.getId() + "/bookings";
 
-        mockMvc.perform(post(url).contentType(MediaType.APPLICATION_JSON).content("{\"userId\": 1}"))
+        mockMvc.perform(post(url))
                 .andExpect(status().isCreated());
 
-        mockMvc.perform(post(url).contentType(MediaType.APPLICATION_JSON).content("{\"userId\": 2}"))
+        mockMvc.perform(post(url).with(org.springframework.security.test.web.servlet.request
+                        .SecurityMockMvcRequestPostProcessors.user("2").roles("USER")))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.status").value(409))
                 .andExpect(jsonPath("$.title").value("Event is full"));
@@ -163,7 +164,7 @@ class BookingConcurrencyIntegrationTest {
 
     private Event newEvent(int capacity) {
         return eventService.create(new EventRequest("Race event", null,
-                Instant.now().plus(30, ChronoUnit.DAYS), capacity, 1L));
+                Instant.now().plus(30, ChronoUnit.DAYS), capacity), 1L);
     }
 
     /** Starts all tasks at the same moment and returns each task's result or the exception it threw. */

@@ -38,7 +38,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(EventController.class)
 @Import(SecurityConfig.class)
-@WithMockUser(roles = "ORGANIZER")
+@WithMockUser(username = "7", roles = "ORGANIZER")
 @TestConstructor(autowireMode = TestConstructor.AutowireMode.ALL)
 class EventControllerTest {
 
@@ -61,7 +61,7 @@ class EventControllerTest {
 
     @Test
     void createReturns201WithLocationAndBody() throws Exception {
-        when(service.create(any(EventRequest.class))).thenReturn(event(5L));
+        when(service.create(any(EventRequest.class), eq(7L))).thenReturn(event(5L));
 
         mockMvc.perform(post("/api/events").contentType(MediaType.APPLICATION_JSON)
                         .content(json("Jazz night", FUTURE, 50, 7L)))
@@ -103,7 +103,7 @@ class EventControllerTest {
 
     @Test
     void updateReturnsUpdatedEvent() throws Exception {
-        when(service.update(eq(5L), any(EventRequest.class))).thenReturn(event(5L));
+        when(service.update(eq(5L), any(EventRequest.class), eq(7L))).thenReturn(event(5L));
 
         mockMvc.perform(put("/api/events/5").contentType(MediaType.APPLICATION_JSON)
                         .content(json("Jazz night", FUTURE, 50, 7L)))
@@ -115,7 +115,7 @@ class EventControllerTest {
     void deleteReturns204() throws Exception {
         mockMvc.perform(delete("/api/events/5")).andExpect(status().isNoContent());
 
-        verify(service).delete(5L);
+        verify(service).delete(5L, 7L);
     }
 
     // ---------- validation (400, ProblemDetail with field errors) ----------
@@ -161,15 +161,44 @@ class EventControllerTest {
     }
 
     @Test
-    void createRejectsMissingOrganizerId() throws Exception {
-        assertValidationError(create(json("Jazz night", FUTURE, 50, null)), "organizerId");
+    void organizerIdInTheBodyIsIgnoredTheOrganizerIsTheAuthenticatedUser() throws Exception {
+        when(service.create(any(EventRequest.class), eq(7L))).thenReturn(event(5L));
+
+        mockMvc.perform(post("/api/events").contentType(MediaType.APPLICATION_JSON)
+                        .content(json("Jazz night", FUTURE, 50, 99L)))
+                .andExpect(status().isCreated());
+
+        verify(service).create(any(EventRequest.class), eq(7L));
+        verify(service, org.mockito.Mockito.never()).create(any(EventRequest.class), eq(99L));
+    }
+
+    @Test
+    void updatingAnotherOrganizersEventReturns403ProblemDetail() throws Exception {
+        when(service.update(eq(5L), any(EventRequest.class), eq(7L)))
+                .thenThrow(new org.springframework.security.access.AccessDeniedException("not yours"));
+
+        mockMvc.perform(put("/api/events/5").contentType(MediaType.APPLICATION_JSON)
+                        .content(json("Jazz night", FUTURE, 50, null)))
+                .andExpect(status().isForbidden())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.title").value("Forbidden"));
+    }
+
+    @Test
+    void deletingAnotherOrganizersEventReturns403ProblemDetail() throws Exception {
+        org.mockito.Mockito.doThrow(new org.springframework.security.access.AccessDeniedException("not yours"))
+                .when(service).delete(5L, 7L);
+
+        mockMvc.perform(delete("/api/events/5"))
+                .andExpect(status().isForbidden())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON));
     }
 
     @Test
     void createReportsAllInvalidFieldsAtOnce() throws Exception {
         create(json("", PAST, 0, null))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.errors.length()").value(4));
+                .andExpect(jsonPath("$.errors.length()").value(3));
     }
 
     @Test
@@ -229,6 +258,62 @@ class EventControllerTest {
 
     private ResultActions create(String body) throws Exception {
         return mockMvc.perform(post("/api/events").contentType(MediaType.APPLICATION_JSON).content(body));
+    }
+
+    // ---------- sort whitelist, concurrency and availability errors ----------
+
+    @Test
+    void listRejectsUnknownSortPropertyWith400ProblemDetail() throws Exception {
+        mockMvc.perform(get("/api/events").param("sort", "foo"))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.containsString("foo")));
+
+        verifyNoInteractions(service);
+    }
+
+    @Test
+    void listDoesNotAllowSortingByInternalFields() throws Exception {
+        for (String internal : List.of("version", "organizerId", "bookedCount")) {
+            mockMvc.perform(get("/api/events").param("sort", internal + ",desc"))
+                    .andExpect(status().isBadRequest());
+        }
+        verifyNoInteractions(service);
+    }
+
+    @Test
+    void listAllowsSortingByStartsAtTitleAndCapacity() throws Exception {
+        when(service.list(any(Pageable.class))).thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 20), 0));
+
+        for (String ok : List.of("startsAt,desc", "title", "capacity,asc", "id")) {
+            mockMvc.perform(get("/api/events").param("sort", ok)).andExpect(status().isOk());
+        }
+    }
+
+    @Test
+    void optimisticLockFailureReturns409ProblemDetailInsteadOf500() throws Exception {
+        when(service.update(eq(5L), any(EventRequest.class), eq(7L)))
+                .thenThrow(new org.springframework.orm.ObjectOptimisticLockingFailureException(Event.class, 5L));
+
+        mockMvc.perform(put("/api/events/5").contentType(MediaType.APPLICATION_JSON)
+                        .content(json("Jazz night", FUTURE, 50, 7L)))
+                .andExpect(status().isConflict())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.title").value("Concurrent modification"));
+    }
+
+    @Test
+    void unavailableDatabaseReturns503ProblemDetailWithRetryAfter() throws Exception {
+        when(service.get(5L)).thenThrow(new org.springframework.transaction.CannotCreateTransactionException(
+                "Could not open JPA EntityManager for transaction"));
+
+        mockMvc.perform(get("/api/events/5"))
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.title").value("Service unavailable"))
+                .andExpect(header().exists("Retry-After"))
+                .andExpect(content().string(org.hamcrest.Matchers.not(
+                        org.hamcrest.Matchers.containsString("EntityManager"))));
     }
 
     private void assertValidationError(ResultActions result, String field) throws Exception {
