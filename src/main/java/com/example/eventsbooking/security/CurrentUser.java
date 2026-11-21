@@ -23,4 +23,9 @@ public final class CurrentUser {
             throw new BadCredentialsException("Token subject is not a user id");
         }
     }
+
+    /** For endpoints open to guests: null means "not logged in". A bad subject still fails. */
+    public static Long idOrNull(Principal principal) {
+        return principal == null ? null : id(principal);
+    }
 }

@@ -53,6 +53,9 @@ class EventControllerTest {
     @MockitoBean
     private EventService service;
 
+    @MockitoBean
+    private com.example.eventsbooking.favorite.FavoriteService favorites;
+
     EventControllerTest(MockMvc mockMvc) {
         this.mockMvc = mockMvc;
     }
@@ -116,6 +119,52 @@ class EventControllerTest {
         mockMvc.perform(delete("/api/events/5")).andExpect(status().isNoContent());
 
         verify(service).delete(5L, 7L);
+    }
+
+    // ---------- isFavorite / seatStatus ----------
+
+    @Test
+    void getMarksTheEventAsFavoriteForTheCurrentUser() throws Exception {
+        when(service.get(5L)).thenReturn(event(5L));
+        when(favorites.favoriteEventIds(eq(7L), any())).thenReturn(java.util.Set.of(5L));
+
+        mockMvc.perform(get("/api/events/5"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.isFavorite").value(true))
+                .andExpect(jsonPath("$.seatStatus").value("AVAILABLE"));
+    }
+
+    @Test
+    void getIsNotFavoriteWhenTheUserDidNotFavoriteIt() throws Exception {
+        when(service.get(5L)).thenReturn(event(5L));
+        when(favorites.favoriteEventIds(eq(7L), any())).thenReturn(java.util.Set.of());
+
+        mockMvc.perform(get("/api/events/5")).andExpect(jsonPath("$.isFavorite").value(false));
+    }
+
+    @Test
+    void listMarksOnlyTheFavoredEventsWithOneLookupForThePage() throws Exception {
+        when(service.list(any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(event(1L), event(2L)), PageRequest.of(0, 10), 2));
+        when(favorites.favoriteEventIds(eq(7L), eq(List.of(1L, 2L)))).thenReturn(java.util.Set.of(2L));
+
+        mockMvc.perform(get("/api/events"))
+                .andExpect(jsonPath("$.content[0].isFavorite").value(false))
+                .andExpect(jsonPath("$.content[1].isFavorite").value(true));
+
+        verify(favorites).favoriteEventIds(eq(7L), eq(List.of(1L, 2L)));
+    }
+
+    @Test
+    @org.springframework.security.test.context.support.WithAnonymousUser
+    void guestSeesIsFavoriteFalseAndTheLookupGetsNoUser() throws Exception {
+        when(service.get(5L)).thenReturn(event(5L));
+
+        mockMvc.perform(get("/api/events/5"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.isFavorite").value(false));
+
+        verify(favorites).favoriteEventIds(eq((Long) null), any());
     }
 
     // ---------- validation (400, ProblemDetail with field errors) ----------

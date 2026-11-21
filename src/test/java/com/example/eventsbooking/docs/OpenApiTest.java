@@ -50,6 +50,6 @@ class OpenApiTest {
 
     @Test
     void apiEndpointsStayProtected() throws Exception {
-        mockMvc.perform(get("/api/events")).andExpect(status().isUnauthorized());
+        mockMvc.perform(get("/api/me")).andExpect(status().isUnauthorized());
     }
 }

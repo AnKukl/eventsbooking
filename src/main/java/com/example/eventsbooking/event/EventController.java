@@ -2,7 +2,9 @@ package com.example.eventsbooking.event;
 
 import jakarta.validation.Valid;
 import java.security.Principal;
+import com.example.eventsbooking.favorite.FavoriteService;
 import com.example.eventsbooking.security.CurrentUser;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.data.web.PagedModel;
@@ -18,15 +20,19 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.net.URI;
+import java.util.List;
+import java.util.Set;
 
 @RestController
 @RequestMapping("/api/events")
 class EventController {
 
     private final EventService service;
+    private final FavoriteService favorites;
 
-    EventController(EventService service) {
+    EventController(EventService service, FavoriteService favorites) {
         this.service = service;
+        this.favorites = favorites;
     }
 
     @PostMapping
@@ -34,19 +40,22 @@ class EventController {
         Event created = service.create(request, CurrentUser.id(principal));
         URI location = ServletUriComponentsBuilder.fromCurrentRequest()
                 .path("/{id}").buildAndExpand(created.getId()).toUri();
-        return ResponseEntity.created(location).body(EventResponse.from(created));
+        return ResponseEntity.created(location).body(EventResponse.from(created, false));
     }
 
     @GetMapping("/{id}")
-    EventResponse get(@PathVariable long id) {
-        return EventResponse.from(service.get(id));
+    EventResponse get(@PathVariable long id, Principal principal) {
+        Event event = service.get(id);
+        boolean favorite = favorites.favoriteEventIds(CurrentUser.idOrNull(principal), List.of(id)).contains(id);
+        return EventResponse.from(event, favorite);
     }
 
     /** Only public, indexed columns may be used for sorting; internal fields (version, organizerId, ...) may not. */
     private static final java.util.Set<String> SORTABLE = java.util.Set.of("id", "title", "startsAt", "capacity");
 
     @GetMapping
-    PagedModel<EventResponse> list(@PageableDefault(size = 20, sort = "startsAt") Pageable pageable) {
+    PagedModel<EventResponse> list(@PageableDefault(size = 20, sort = "startsAt") Pageable pageable,
+            Principal principal) {
         pageable.getSort().forEach(order -> {
             if (!SORTABLE.contains(order.getProperty())) {
                 throw new org.springframework.web.server.ResponseStatusException(
@@ -54,12 +63,18 @@ class EventController {
                         "Unsupported sort property: " + order.getProperty() + ". Allowed: " + new java.util.TreeSet<>(SORTABLE));
             }
         });
-        return new PagedModel<>(service.list(pageable).map(EventResponse::from));
+        Page<Event> page = service.list(pageable);
+        // one lookup for the whole page, not one per event
+        Set<Long> favored = favorites.favoriteEventIds(CurrentUser.idOrNull(principal),
+                page.getContent().stream().map(Event::getId).toList());
+        return new PagedModel<>(page.map(event -> EventResponse.from(event, favored.contains(event.getId()))));
     }
 
     @PutMapping("/{id}")
     EventResponse update(@PathVariable long id, @Valid @RequestBody EventRequest request, Principal principal) {
-        return EventResponse.from(service.update(id, request, CurrentUser.id(principal)));
+        long userId = CurrentUser.id(principal);
+        Event event = service.update(id, request, userId);
+        return EventResponse.from(event, favorites.favoriteEventIds(userId, List.of(id)).contains(id));
     }
 
     @DeleteMapping("/{id}")

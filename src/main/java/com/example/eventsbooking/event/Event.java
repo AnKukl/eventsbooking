@@ -82,6 +82,11 @@ public class Event {
         this.organizerId = organizerId;
     }
 
+    /** Seats left or not; derived from the counters, never stored. */
+    public SeatStatus seatStatus() {
+        return bookedCount >= capacity ? SeatStatus.SOLD_OUT : SeatStatus.AVAILABLE;
+    }
+
     public Long getId() {
         return id;
     }

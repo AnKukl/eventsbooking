@@ -45,7 +45,7 @@ docker compose down -v      # остановить и удалить данны�
 
 Приложение — stateless API на Spring Security: `POST /api/auth/register`, `POST /api/auth/login`, дальше
 `Authorization: Bearer <token>`. Роли `USER` и `ORGANIZER`; создавать/менять/удалять мероприятия может только `ORGANIZER`,
-`/actuator/health` открыт, всё остальное — только с токеном (deny by default).
+`/actuator/health` и чтение каталога (`GET /api/events`, `GET /api/events/{id}`) открыты, всё остальное — только с токеном (deny by default).
 
 Секрет подписи берётся **только** из переменной окружения `JWT_SECRET` (минимум 32 байта), значения по умолчанию нет —
 без неё приложение не стартует. Не коммить секрет и не логируй токены/пароли.

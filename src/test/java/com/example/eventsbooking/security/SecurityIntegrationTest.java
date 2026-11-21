@@ -62,7 +62,8 @@ class SecurityIntegrationTest {
     void anonymousRequestsToProtectedEndpointsGet401() throws Exception {
         mockMvc.perform(post("/api/events").contentType(MediaType.APPLICATION_JSON).content(EVENT))
                 .andExpect(status().isUnauthorized());
-        mockMvc.perform(get("/api/events")).andExpect(status().isUnauthorized());
+        mockMvc.perform(get("/api/me")).andExpect(status().isUnauthorized());
+        mockMvc.perform(get("/api/favorites")).andExpect(status().isUnauthorized());
     }
 
     @Test

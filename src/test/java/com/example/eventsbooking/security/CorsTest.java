@@ -51,7 +51,8 @@ class CorsTest {
 
     @Test
     void errorResponsesCarryCorsHeadersSoTheFrontendCanReadThem() throws Exception {
-        mockMvc.perform(get("/api/events").header(HttpHeaders.ORIGIN, FRONTEND))
+        // a protected endpoint: the open catalog (GET /api/events) would not produce a 401 for a guest
+        mockMvc.perform(get("/api/me").header(HttpHeaders.ORIGIN, FRONTEND))
                 .andExpect(status().isUnauthorized())
                 .andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, FRONTEND));
     }

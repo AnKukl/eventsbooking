@@ -1,5 +1,7 @@
 package com.example.eventsbooking.event;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import java.time.Instant;
 
 public record EventResponse(
@@ -9,10 +11,13 @@ public record EventResponse(
         Instant startsAt,
         int capacity,
         int bookedCount,
-        long organizerId) {
+        long organizerId,
+        SeatStatus seatStatus,
+        @JsonProperty("isFavorite") boolean isFavorite) {
 
-    static EventResponse from(Event event) {
+    public static EventResponse from(Event event, boolean favorite) {
         return new EventResponse(event.getId(), event.getTitle(), event.getDescription(),
-                event.getStartsAt(), event.getCapacity(), event.getBookedCount(), event.getOrganizerId());
+                event.getStartsAt(), event.getCapacity(), event.getBookedCount(), event.getOrganizerId(),
+                event.seatStatus(), favorite);
     }
 }

@@ -54,6 +54,9 @@ class EventSecurityTest {
     private EventService service;
 
     @MockitoBean
+    private com.example.eventsbooking.favorite.FavoriteService favorites;
+
+    @MockitoBean
     private JwtDecoder jwtDecoder;
 
     EventSecurityTest(MockMvc mockMvc) {
@@ -75,9 +78,20 @@ class EventSecurityTest {
     }
 
     @Test
-    void readingWithoutTokenReturns401() throws Exception {
-        mockMvc.perform(get("/api/events/5")).andExpect(status().isUnauthorized());
-        mockMvc.perform(get("/api/events")).andExpect(status().isUnauthorized());
+    void guestsMayReadTheCatalogButNotChangeIt() throws Exception {
+        when(service.get(5L)).thenReturn(event(5L));
+        when(service.list(any(Pageable.class))).thenReturn(new PageImpl<>(List.of(event(5L))));
+
+        mockMvc.perform(get("/api/events/5")).andExpect(status().isOk());
+        mockMvc.perform(get("/api/events")).andExpect(status().isOk());
+    }
+
+    @Test
+    void garbageTokenOnTheOpenCatalogStillGets401() throws Exception {
+        when(jwtDecoder.decode("garbage")).thenThrow(new BadJwtException("bad token"));
+
+        mockMvc.perform(get("/api/events").header(HttpHeaders.AUTHORIZATION, "Bearer garbage"))
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
