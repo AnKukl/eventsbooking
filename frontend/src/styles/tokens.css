@@ -1,0 +1,42 @@
+/*
+ * The only place colours are defined. Everything else uses these variables.
+ * Values from the stage 16 brief; to be checked against design/tokens.css once the mock-ups are in the repo.
+ */
+:root {
+  /* background gradient */
+  --color-bg-start: #f3eadb;
+  --color-bg-mid: #e2cfb3;
+  --color-bg-end: #c9ae8c;
+  --gradient-page: linear-gradient(180deg, var(--color-bg-start) 0%, var(--color-bg-mid) 55%, var(--color-bg-end) 100%);
+
+  --color-card: #f4ead9;
+  --color-text: #2e241d;
+  --color-accent: #b5563a;
+  --color-dark: #16201e;
+  --color-success: #1e6b66;
+
+  /* derived: the logo letter and text on the accent use the card cream */
+  --color-on-accent: var(--color-card);
+  --color-text-muted: color-mix(in srgb, var(--color-text) 65%, transparent);
+  --color-border: color-mix(in srgb, var(--color-text) 14%, transparent);
+  --color-focus: color-mix(in srgb, var(--color-accent) 45%, transparent);
+
+  --font-heading: 'Fraunces', Georgia, serif;
+  --font-body: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 22px;
+  --radius-pill: 999px;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+
+  --shadow-card: 0 1px 2px color-mix(in srgb, var(--color-dark) 8%, transparent),
+    0 8px 24px color-mix(in srgb, var(--color-dark) 8%, transparent);
+}
