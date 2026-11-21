@@ -19,21 +19,25 @@ public class IdempotencyKeys {
 
     private final JdbcClient jdbc;
     private final java.time.Clock clock;
+    private final IdempotencyProperties properties;
 
-    public IdempotencyKeys(JdbcClient jdbc, java.time.Clock clock) {
+    public IdempotencyKeys(JdbcClient jdbc, java.time.Clock clock, IdempotencyProperties properties) {
         this.jdbc = jdbc;
         this.clock = clock;
+        this.properties = properties;
     }
 
     /** True if the key was free and is now taken by this request; false if an earlier request already used it. */
     public boolean claim(long userId, String key, long eventId, int seats) {
         return jdbc.sql("""
-                INSERT INTO idempotency_keys (user_id, idempotency_key, event_id, seats, created_at)
-                VALUES (:userId, :key, :eventId, :seats, :createdAt)
+                INSERT INTO idempotency_keys (user_id, idempotency_key, event_id, seats, created_at, expires_at)
+                VALUES (:userId, :key, :eventId, :seats, :createdAt, :expiresAt)
                 ON CONFLICT (user_id, idempotency_key) DO NOTHING
                 """)
                 .param("userId", userId).param("key", key).param("eventId", eventId).param("seats", seats)
                 .param("createdAt", java.time.OffsetDateTime.ofInstant(clock.instant(),
+                        java.time.ZoneOffset.UTC))
+                .param("expiresAt", java.time.OffsetDateTime.ofInstant(clock.instant().plus(properties.ttl()),
                         java.time.ZoneOffset.UTC))
                 .update() == 1;
     }
