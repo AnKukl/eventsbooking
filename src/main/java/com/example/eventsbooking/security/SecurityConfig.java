@@ -52,6 +52,9 @@ public class SecurityConfig {
                         .requestMatchers("/v3/api-docs", "/v3/api-docs/**", "/swagger-ui.html", "/swagger-ui/**").permitAll()
                         // the catalog is public for guests (isFavorite is false for them); changing it is not
                         .requestMatchers(HttpMethod.GET, "/api/events", "/api/events/*", "/api/events/*/preview").permitAll()
+                        // uploaded pictures are shown on public pages; the cabinet is for organizers only
+                        .requestMatchers(HttpMethod.GET, "/api/media/*").permitAll()
+                        .requestMatchers("/api/organizer/**").hasRole(ROLE_ORGANIZER)
                         .requestMatchers(HttpMethod.POST, "/api/events").hasRole(ROLE_ORGANIZER)
                         .requestMatchers(HttpMethod.PUT, "/api/events/*").hasRole(ROLE_ORGANIZER)
                         .requestMatchers(HttpMethod.DELETE, "/api/events/*").hasRole(ROLE_ORGANIZER)

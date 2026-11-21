@@ -6,6 +6,7 @@ import com.example.eventsbooking.common.ConflictException;
 import com.example.eventsbooking.event.Event;
 import com.example.eventsbooking.event.EventNotFoundException;
 import com.example.eventsbooking.event.EventRepository;
+import com.example.eventsbooking.event.EventStatus;
 import com.example.eventsbooking.event.SeatStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,12 +36,17 @@ public class WaitlistService {
      */
     @Transactional
     public boolean join(long userId, long eventId, WaitlistChannel channel) {
-        Event event = events.findById(eventId).orElseThrow(() -> new EventNotFoundException(eventId));
+        Event event = events.findById(eventId)
+                .filter(found -> found.getStatus() == EventStatus.PUBLISHED)   // a draft does not exist for the public
+                .orElseThrow(() -> new EventNotFoundException(eventId));
         if (waitlist.existsByUserIdAndEventId(userId, eventId)) {
             return false;
         }
         if (!event.getStartsAt().isAfter(clock.instant())) {
             throw new ConflictException("Event already started", "Event " + eventId + " has already started");
+        }
+        if (!event.isWaitlistEnabled()) {
+            throw new ConflictException("Waitlist disabled", "The organizer has switched the waitlist off for this event");
         }
         if (event.seatStatus() != SeatStatus.SOLD_OUT) {
             throw new ConflictException("Event has free seats",

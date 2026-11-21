@@ -26,6 +26,10 @@ COPY --from=build /workspace/target/extracted/spring-boot-loader/ ./
 COPY --from=build /workspace/target/extracted/snapshot-dependencies/ ./
 COPY --from=build /workspace/target/extracted/application/ ./
 
+# Uploaded event photos: a directory the unprivileged user may write to; compose mounts a volume here
+RUN mkdir -p /app/data/uploads && chown -R app:app /app/data
+ENV STORAGE_DIR=/app/data/uploads
+
 USER app
 EXPOSE 8080
 

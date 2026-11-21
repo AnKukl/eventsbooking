@@ -41,12 +41,14 @@ public class EventService {
                         : request.media().stream().map(m -> new EventMedia(m.url(), m.alt())).toList());
     }
 
+    /** Public read: drafts and cancelled events do not exist for the public (the organizer uses the cabinet). */
     public Event get(long id) {
-        return repository.findById(id).orElseThrow(() -> new EventNotFoundException(id));
+        return repository.findById(id).filter(event -> event.getStatus() == EventStatus.PUBLISHED)
+                .orElseThrow(() -> new EventNotFoundException(id));
     }
 
     public Page<Event> list(Pageable pageable) {
-        return repository.findAll(pageable);
+        return repository.findByStatus(EventStatus.PUBLISHED, pageable);
     }
 
     /** Only the organizer who created the event may change it. */
@@ -57,6 +59,7 @@ public class EventService {
         event.update(request.title(), request.description(), request.startsAt(), request.capacity(),
                 event.getOrganizerId());
         applyPreview(event, request);
+        event.bumpRevision();   // an organizer form opened before this edit is stale now
         int added = event.getCapacity() - capacityBefore;
         if (added > 0) {
             // delivered to the waitlist only if this transaction commits
@@ -71,7 +74,8 @@ public class EventService {
     }
 
     private Event ownedBy(long id, long requesterId) {
-        Event event = get(id);
+        // any status: an organizer may still change or delete a draft through these endpoints
+        Event event = repository.findById(id).orElseThrow(() -> new EventNotFoundException(id));
         if (event.getOrganizerId() != requesterId) {
             throw new AccessDeniedException("Event " + id + " belongs to another organizer");
         }

@@ -72,7 +72,7 @@ class EventServiceTest {
         Pageable pageable = PageRequest.of(0, 10);
         Page<Event> page = new PageImpl<>(
                 List.of(new Event("Jazz night", null, IN_A_WEEK, 50, 7L)), pageable, 1);
-        when(repository.findAll(pageable)).thenReturn(page);
+        when(repository.findByStatus(EventStatus.PUBLISHED, pageable)).thenReturn(page);
 
         assertThat(service.list(pageable)).isSameAs(page);
     }
@@ -296,5 +296,30 @@ class EventServiceTest {
                 .isInstanceOf(org.springframework.security.access.AccessDeniedException.class);
 
         verify(eventPublisher, never()).publishEvent(any(Object.class));
+    }
+
+    // ---------- drafts and cancelled events are not public ----------
+
+    @Test
+    void aDraftIsNotFoundThroughThePublicReadPaths() {
+        Event draft = new Event("Draft", null, IN_A_WEEK, 10, 7L);
+        org.springframework.test.util.ReflectionTestUtils.setField(draft, "status", EventStatus.DRAFT);
+        when(repository.findById(1L)).thenReturn(Optional.of(draft));
+
+        assertThatThrownBy(() -> service.get(1L)).isInstanceOf(EventNotFoundException.class);
+        assertThatThrownBy(() -> service.preview(1L)).isInstanceOf(EventNotFoundException.class);
+    }
+
+    @Test
+    void theOwnerCanStillChangeOrDeleteADraftThroughTheOldEndpoints() {
+        Event draft = new Event("Draft", null, IN_A_WEEK, 10, 7L);
+        org.springframework.test.util.ReflectionTestUtils.setField(draft, "status", EventStatus.DRAFT);
+        when(repository.findById(1L)).thenReturn(Optional.of(draft));
+
+        service.update(1L, new EventRequest("Renamed", null, IN_A_WEEK, 10), 7L);
+        service.delete(1L, 7L);
+
+        assertThat(draft.getTitle()).isEqualTo("Renamed");
+        verify(repository).delete(draft);
     }
 }

@@ -3,6 +3,7 @@ package com.example.eventsbooking.favorite;
 import com.example.eventsbooking.event.Event;
 import com.example.eventsbooking.event.EventNotFoundException;
 import com.example.eventsbooking.event.EventRepository;
+import com.example.eventsbooking.event.EventStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -30,7 +31,7 @@ public class FavoriteService {
     @Transactional
     public boolean add(long userId, long eventId) {
         boolean created = favorites.insertIfAbsent(userId, eventId, clock.instant()) == 1;
-        if (!created && !events.existsById(eventId)) {
+        if (!created && !events.existsByIdAndStatus(eventId, EventStatus.PUBLISHED)) {
             throw new EventNotFoundException(eventId);
         }
         return created;

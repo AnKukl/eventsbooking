@@ -103,6 +103,46 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
                 .contentType(org.springframework.http.MediaType.APPLICATION_PROBLEM_JSON).body(problem);
     }
 
+    @ExceptionHandler(com.example.eventsbooking.organizer.EventNotPublishableException.class)
+    ResponseEntity<ProblemDetail> handleNotPublishable(com.example.eventsbooking.organizer.EventNotPublishableException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.UNPROCESSABLE_ENTITY, ex.getMessage());
+        problem.setTitle("Event is not ready to publish");
+        problem.setProperty("errors", ex.getMissing().stream()
+                .map(missing -> new FieldViolation(missing.field(), missing.message())).toList());
+        return ResponseEntity.unprocessableEntity().contentType(org.springframework.http.MediaType.APPLICATION_PROBLEM_JSON)
+                .body(problem);
+    }
+
+    @ExceptionHandler(com.example.eventsbooking.organizer.InvalidImageException.class)
+    ProblemDetail handleInvalidImage(com.example.eventsbooking.organizer.InvalidImageException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+        problem.setTitle("Invalid image");
+        return problem;
+    }
+
+    @ExceptionHandler(com.example.eventsbooking.organizer.UnsupportedImageTypeException.class)
+    ResponseEntity<ProblemDetail> handleUnsupportedImage(com.example.eventsbooking.organizer.UnsupportedImageTypeException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.UNSUPPORTED_MEDIA_TYPE, ex.getMessage());
+        problem.setTitle("Unsupported image type");
+        return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
+                .contentType(org.springframework.http.MediaType.APPLICATION_PROBLEM_JSON).body(problem);
+    }
+
+    @ExceptionHandler(com.example.eventsbooking.organizer.ImageTooLargeException.class)
+    ResponseEntity<ProblemDetail> handleImageTooLarge(com.example.eventsbooking.organizer.ImageTooLargeException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.valueOf(413), ex.getMessage());
+        problem.setTitle("Image too large");
+        return ResponseEntity.status(413).contentType(org.springframework.http.MediaType.APPLICATION_PROBLEM_JSON)
+                .body(problem);
+    }
+
+    @ExceptionHandler(com.example.eventsbooking.organizer.InvalidRangeException.class)
+    ProblemDetail handleInvalidRange(com.example.eventsbooking.organizer.InvalidRangeException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+        problem.setTitle("Invalid range");
+        return problem;
+    }
+
     @ExceptionHandler(com.example.eventsbooking.booking.InvalidSeatCountException.class)
     ProblemDetail handleInvalidSeatCount(com.example.eventsbooking.booking.InvalidSeatCountException ex) {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());

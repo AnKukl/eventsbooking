@@ -3,6 +3,7 @@ package com.example.eventsbooking.favorite;
 import com.example.eventsbooking.event.Event;
 import com.example.eventsbooking.event.EventNotFoundException;
 import com.example.eventsbooking.event.EventRepository;
+import com.example.eventsbooking.event.EventStatus;
 import org.junit.jupiter.api.Test;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -48,7 +49,7 @@ class FavoriteServiceTest {
     @Test
     void addingTwiceIsIdempotentAndReportsNoCreation() {
         when(favorites.insertIfAbsent(7L, 5L, NOW)).thenReturn(0);
-        when(events.existsById(5L)).thenReturn(true);
+        when(events.existsByIdAndStatus(5L, EventStatus.PUBLISHED)).thenReturn(true);
 
         assertThat(service.add(7L, 5L)).isFalse();
     }
@@ -56,7 +57,7 @@ class FavoriteServiceTest {
     @Test
     void addingAnUnknownEventFailsWith404Exception() {
         when(favorites.insertIfAbsent(7L, 99L, NOW)).thenReturn(0);
-        when(events.existsById(99L)).thenReturn(false);
+        when(events.existsByIdAndStatus(99L, EventStatus.PUBLISHED)).thenReturn(false);
 
         assertThatThrownBy(() -> service.add(7L, 99L)).isInstanceOf(EventNotFoundException.class);
     }

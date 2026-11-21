@@ -69,6 +69,15 @@ flowchart LR
 | GET, PUT | `/api/me/notifications/preferences` | любой пользователь с токеном | каналы (`email`, `push`) для каждого типа уведомлений; по умолчанию всё включено |
 | GET | `/api/events?page=0&size=10` | открыт (гость и пользователь) | список мероприятий с пагинацией; поля `seatStatus` (`AVAILABLE`/`SOLD_OUT`) и `isFavorite` (для гостя `false`) |
 | GET | `/api/events/{id}` | открыт (гость и пользователь) | одно мероприятие, те же поля |
+| GET | `/api/organizer/events?status=DRAFT\|PUBLISHED\|SOLD_OUT\|CANCELLED&page=0&size=20` | `ORGANIZER` | мои события с пагинацией и фильтром по статусу |
+| GET | `/api/organizer/events/{id}` | `ORGANIZER`, только автор | событие со всеми полями и `version` |
+| POST | `/api/organizer/events` | `ORGANIZER` | создать черновик: обязательны `title`, `startsAt`, `capacity`; необязательны `description`, `shortDescription`, `venue`, `price`, `waitlistEnabled`, `audienceFit`, `audienceNotFit` |
+| PATCH | `/api/organizer/events/{id}` | `ORGANIZER`, только автор | частичное изменение; обязателен `version` из последнего ответа (устаревший — `409`; брони версию не меняют) |
+| PUT | `/api/organizer/events/{id}/publish` | `ORGANIZER`, только автор | опубликовать: нужны название, будущая дата, `venue`, `price`, минимум одно фото; иначе `422` и список `errors` с незаполненными полями |
+| POST | `/api/organizer/events/{id}/media` | `ORGANIZER`, только автор | загрузка фото, `multipart/form-data`, поле `files` (можно несколько); всего до 6 на событие, JPG/PNG/WebP до 8 МБ, тип проверяется по содержимому (`415` для подмены расширения, `413` для большого файла) |
+| GET | `/api/organizer/events/{id}/bookings?page=0&size=20` | `ORGANIZER`, только автор | брони события без email и телефона (участник: `id` и имя) |
+| GET | `/api/organizer/analytics?range=7d` | `ORGANIZER` | продано, выручка и заполненность за `1d`–`365d` (считается SQL-запросом) |
+| GET | `/api/media/{имя}` | открыт | загруженное фото (имя из ответа загрузки), кэшируется на год |
 | GET | `/api/events/{id}/preview` | открыт (гость и пользователь) | данные предпросмотра: `shortDescription`, `audienceFit`, `audienceNotFit`, `media`; `Cache-Control: max-age=300`, `ETag`, `304` по `If-None-Match` |
 | POST | `/api/events` | `ORGANIZER` | создать мероприятие (организатор = текущий пользователь); необязательные поля предпросмотра: `shortDescription` (≤160), `audienceFit` (≤4 строк по ≤100), `audienceNotFit` (≤3), `media` (≤6 картинок `{url, alt}`, первая — обложка, только `http(s)`) |
 | PUT | `/api/events/{id}` | `ORGANIZER`, только автор | изменить мероприятие; поля предпросмотра, которых нет в теле, не меняются, пустой список очищает |

@@ -4,6 +4,8 @@ import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
 import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OrderColumn;
 import jakarta.persistence.GeneratedValue;
@@ -14,6 +16,7 @@ import jakarta.persistence.Version;
 
 import com.example.eventsbooking.common.ConflictException;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -73,6 +76,27 @@ public class Event {
     @Version
     private long version;
 
+    /** Events created through the public API are published at once; the organizer cabinet creates drafts. */
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 16)
+    private EventStatus status = EventStatus.PUBLISHED;
+
+    @Column(length = 200)
+    private String venue;
+
+    @Column(precision = 10, scale = 2)
+    private BigDecimal price;
+
+    @Column(nullable = false)
+    private boolean waitlistEnabled = true;
+
+    /**
+     * The version an organizer edits against. Unlike {@link #version} it does not change when somebody books, so an
+     * open edit form is not made stale by bookings; it changes only when an organizer-side edit is saved.
+     */
+    @Column(nullable = false)
+    private long revision;
+
     protected Event() {
         // for JPA
     }
@@ -122,6 +146,64 @@ public class Event {
         this.organizerId = organizerId;
     }
 
+    /** A draft: visible only to its organizer until it is published. */
+    public static Event draft(String title, String description, Instant startsAt, int capacity, long organizerId) {
+        Event event = new Event(title, description, startsAt, capacity, organizerId);
+        event.status = EventStatus.DRAFT;
+        return event;
+    }
+
+    /** Organizer edit; {@code null} keeps the current value. Saving it is what bumps the revision (see the service). */
+    public void organizerUpdate(String title, String description, Instant startsAt, Integer capacity, String venue,
+            BigDecimal price, Boolean waitlistEnabled) {
+        update(title != null ? title : this.title, description != null ? description : this.description,
+                startsAt != null ? startsAt : this.startsAt, capacity != null ? capacity : this.capacity,
+                this.organizerId);
+        if (venue != null) {
+            this.venue = venue.isBlank() ? null : venue.strip();
+        }
+        if (price != null) {
+            this.price = price;
+        }
+        if (waitlistEnabled != null) {
+            this.waitlistEnabled = waitlistEnabled;
+        }
+    }
+
+    public void bumpRevision() {
+        revision++;
+    }
+
+    /** What still has to be filled in before this event may be published (empty: ready). */
+    public List<MissingField> missingForPublish(Instant now) {
+        List<MissingField> missing = new ArrayList<>();
+        if (title == null || title.isBlank()) {
+            missing.add(new MissingField("title", "must not be blank"));
+        }
+        if (startsAt == null || !startsAt.isAfter(now)) {
+            missing.add(new MissingField("startsAt", "must be in the future"));
+        }
+        if (venue == null || venue.isBlank()) {
+            missing.add(new MissingField("venue", "must be set"));
+        }
+        if (price == null) {
+            missing.add(new MissingField("price", "must be set (0 for a free event)"));
+        }
+        if (media.isEmpty()) {
+            missing.add(new MissingField("media", "at least one photo is required"));
+        }
+        return missing;
+    }
+
+    public void publish() {
+        this.status = EventStatus.PUBLISHED;
+    }
+
+    /** Appends images after the existing ones (the first image of the event stays the cover). */
+    public void addMedia(List<EventMedia> more) {
+        media.addAll(more);
+    }
+
     /**
      * Sets the preview fields. {@code null} keeps the current value; an empty list or string clears it. Limits are
      * validated at the API boundary and backed by database constraints.
@@ -158,6 +240,26 @@ public class Event {
 
     public String getDescription() {
         return description;
+    }
+
+    public EventStatus getStatus() {
+        return status;
+    }
+
+    public String getVenue() {
+        return venue;
+    }
+
+    public BigDecimal getPrice() {
+        return price;
+    }
+
+    public boolean isWaitlistEnabled() {
+        return waitlistEnabled;
+    }
+
+    public long getRevision() {
+        return revision;
     }
 
     public String getShortDescription() {

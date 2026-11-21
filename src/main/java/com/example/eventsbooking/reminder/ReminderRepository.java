@@ -21,7 +21,8 @@ class ReminderRepository {
     private static final String SEND = """
             WITH due AS (
                 UPDATE events SET %1$s = :now
-                WHERE %1$s IS NULL AND starts_at > CAST(:now AS timestamptz) + CAST(:from AS interval)
+                WHERE %1$s IS NULL AND status = 'PUBLISHED'
+                  AND starts_at > CAST(:now AS timestamptz) + CAST(:from AS interval)
                   AND starts_at <= CAST(:now AS timestamptz) + CAST(:to AS interval)
                 RETURNING id, title
             )

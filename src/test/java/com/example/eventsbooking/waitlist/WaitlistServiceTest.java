@@ -120,4 +120,23 @@ class WaitlistServiceTest {
         when(events.findById(5L)).thenReturn(Optional.of(event));
         return event;
     }
+
+    @Test
+    void aDraftCannotBeWaitedFor() {
+        Event draft = soldOutEvent(NOW.plusSeconds(86_400));
+        ReflectionTestUtils.setField(draft, "status", com.example.eventsbooking.event.EventStatus.DRAFT);
+
+        assertThatThrownBy(() -> service.join(7L, 5L, WaitlistChannel.EMAIL)).isInstanceOf(EventNotFoundException.class);
+    }
+
+    @Test
+    void anEventWithTheWaitlistSwitchedOffRefusesNewEntries() {
+        Event event = soldOutEvent(NOW.plusSeconds(86_400));
+        event.organizerUpdate(null, null, null, null, null, null, false);
+
+        assertThatThrownBy(() -> service.join(7L, 5L, WaitlistChannel.EMAIL))
+                .isInstanceOf(ConflictException.class).hasMessageContaining("waitlist");
+
+        verify(waitlist, never()).insertIfAbsent(anyLong(), anyLong(), anyString(), any());
+    }
 }

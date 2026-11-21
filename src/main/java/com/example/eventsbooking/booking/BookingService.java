@@ -4,6 +4,7 @@ import com.example.eventsbooking.common.ConflictException;
 import com.example.eventsbooking.event.Event;
 import com.example.eventsbooking.event.EventNotFoundException;
 import com.example.eventsbooking.event.EventRepository;
+import com.example.eventsbooking.event.EventStatus;
 import com.example.eventsbooking.event.SeatReleased;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -151,7 +152,9 @@ public class BookingService {
         if (key != null && !idempotencyKeys.claim(userId, key, eventId, seats)) {
             return replay(userId, key, eventId, seats);
         }
-        Event event = events.findById(eventId).orElseThrow(() -> new EventNotFoundException(eventId));
+        Event event = events.findById(eventId)
+                .filter(found -> found.getStatus() == EventStatus.PUBLISHED)   // a draft does not exist for bookers
+                .orElseThrow(() -> new EventNotFoundException(eventId));
         Instant now = clock.instant();
         if (!event.getStartsAt().isAfter(now)) {
             throw new EventAlreadyStartedException(eventId);

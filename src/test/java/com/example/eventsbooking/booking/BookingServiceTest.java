@@ -121,6 +121,16 @@ class BookingServiceTest {
     }
 
     @Test
+    void aDraftEventCannotBeBookedAndLooksMissing() {
+        Event draft = new Event("Draft", null, STARTS, 10, 1L);
+        ReflectionTestUtils.setField(draft, "id", 1L);
+        ReflectionTestUtils.setField(draft, "status", com.example.eventsbooking.event.EventStatus.DRAFT);
+        when(events.findById(1L)).thenReturn(Optional.of(draft));
+
+        assertThatThrownBy(() -> service.book(1L, 10L, 1, null)).isInstanceOf(EventNotFoundException.class);
+    }
+
+    @Test
     void aStartedEventCannotBeBooked() {
         Event event = new Event("Started", null, NOW, 10, 1L);
         ReflectionTestUtils.setField(event, "id", 1L);

@@ -21,7 +21,7 @@ public interface FavoriteRepository extends JpaRepository<Favorite, Long> {
     @Modifying
     @Query(value = """
             INSERT INTO favorites (user_id, event_id, created_at)
-            SELECT CAST(:userId AS bigint), e.id, CAST(:createdAt AS timestamptz) FROM events e WHERE e.id = :eventId
+            SELECT CAST(:userId AS bigint), e.id, CAST(:createdAt AS timestamptz) FROM events e WHERE e.id = :eventId AND e.status = 'PUBLISHED'
             ON CONFLICT (user_id, event_id) DO NOTHING
             """, nativeQuery = true)
     int insertIfAbsent(@Param("userId") long userId, @Param("eventId") long eventId,
@@ -34,9 +34,10 @@ public interface FavoriteRepository extends JpaRepository<Favorite, Long> {
     /** The user's favorite events, newest favorite first. The order is fixed: pass an unsorted Pageable. */
     @Query(value = """
             SELECT e.* FROM events e JOIN favorites f ON f.event_id = e.id
-            WHERE f.user_id = :userId ORDER BY f.created_at DESC, f.id DESC
+            WHERE f.user_id = :userId AND e.status = 'PUBLISHED' ORDER BY f.created_at DESC, f.id DESC
             """,
-            countQuery = "SELECT count(*) FROM favorites WHERE user_id = :userId",
+            countQuery = "SELECT count(*) FROM favorites f JOIN events e ON e.id = f.event_id "
+                    + "WHERE f.user_id = :userId AND e.status = 'PUBLISHED'",
             nativeQuery = true)
     Page<Event> findEventsByUserId(@Param("userId") long userId, Pageable pageable);
 
