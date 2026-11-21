@@ -30,6 +30,8 @@ class BookingCancellationTest {
 
     private final EventRepository events = mock(EventRepository.class);
     private final BookingRepository bookings = mock(BookingRepository.class);
+    private final org.springframework.context.ApplicationEventPublisher eventPublisher =
+            mock(org.springframework.context.ApplicationEventPublisher.class);
 
     // ---------- 24-hour boundary ----------
 
@@ -161,11 +163,48 @@ class BookingCancellationTest {
         verify(bookings, never()).saveAndFlush(any());
     }
 
+    // ---------- SeatReleased: the waitlist is told that a seat is free ----------
+
+    @Test
+    void cancellationPublishesOneSeatReleasedForTheEvent() {
+        activeBooking(eventStartingAt(NOW.plus(Duration.ofDays(3))));
+
+        service(Duration.ofHours(24)).cancel(1L, 100L, 10L);
+
+        var captor = org.mockito.ArgumentCaptor.forClass(com.example.eventsbooking.event.SeatReleased.class);
+        verify(eventPublisher).publishEvent(captor.capture());
+        assertThat(captor.getValue().eventId()).isEqualTo(1L);
+        assertThat(captor.getValue().seats()).isEqualTo(1);
+        assertThat(captor.getValue().releaseId()).isNotNull();
+    }
+
+    @Test
+    void everyCancellationGetsItsOwnReleaseId() {
+        activeBooking(eventStartingAt(NOW.plus(Duration.ofDays(3))));
+        service(Duration.ofHours(24)).cancel(1L, 100L, 10L);
+        activeBooking(eventStartingAt(NOW.plus(Duration.ofDays(3))));
+        service(Duration.ofHours(24)).cancel(1L, 100L, 10L);
+
+        var captor = org.mockito.ArgumentCaptor.forClass(com.example.eventsbooking.event.SeatReleased.class);
+        verify(eventPublisher, org.mockito.Mockito.times(2)).publishEvent(captor.capture());
+        assertThat(captor.getAllValues().get(0).releaseId()).isNotEqualTo(captor.getAllValues().get(1).releaseId());
+    }
+
+    @Test
+    void rejectedCancellationPublishesNothing() {
+        activeBooking(eventStartingAt(NOW.plus(Duration.ofHours(1))));
+
+        assertThatThrownBy(() -> service(Duration.ofHours(24)).cancel(1L, 100L, 10L))
+                .isInstanceOf(CancellationTooLateException.class);
+
+        verify(eventPublisher, never()).publishEvent(any(Object.class));
+    }
+
     // ---------- helpers ----------
 
     private BookingService service(Duration notice) {
         return new BookingService(events, bookings, mock(PlatformTransactionManager.class),
-                CLOCK, new BookingProperties(notice), mock(BookingEventPublisher.class));
+                CLOCK, new BookingProperties(notice), mock(BookingEventPublisher.class), eventPublisher);
     }
 
     /** Creates an event (id 1) with one seat already booked and registers it in the mock repository. */

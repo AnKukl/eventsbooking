@@ -44,7 +44,8 @@ class BookingServiceTest {
         publisher = mock(BookingEventPublisher.class);
         txManager = mock(PlatformTransactionManager.class);
         service = new BookingService(events, bookings, txManager,
-                Clock.fixed(START.minus(Duration.ofDays(1)), ZoneOffset.UTC), new BookingProperties(Duration.ofHours(24)), publisher);
+                Clock.fixed(START.minus(Duration.ofDays(1)), ZoneOffset.UTC), new BookingProperties(Duration.ofHours(24)), publisher,
+                mock(org.springframework.context.ApplicationEventPublisher.class));
     }
 
     @Test

@@ -3,6 +3,8 @@ package com.example.eventsbooking.booking;
 import com.example.eventsbooking.event.Event;
 import com.example.eventsbooking.event.EventNotFoundException;
 import com.example.eventsbooking.event.EventRepository;
+import com.example.eventsbooking.event.SeatReleased;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
@@ -12,6 +14,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.UUID;
 import java.util.function.Supplier;
 
 /**
@@ -52,9 +55,12 @@ public class BookingService {
     private final Clock clock;
     private final BookingProperties properties;
     private final BookingEventPublisher publisher;
+    private final ApplicationEventPublisher eventPublisher;
 
     public BookingService(EventRepository events, BookingRepository bookings,
-            PlatformTransactionManager transactionManager, Clock clock, BookingProperties properties, BookingEventPublisher publisher) {
+            PlatformTransactionManager transactionManager, Clock clock, BookingProperties properties,
+            BookingEventPublisher publisher, ApplicationEventPublisher eventPublisher) {
+        this.eventPublisher = eventPublisher;
         this.events = events;
         this.bookings = bookings;
         this.transaction = new TransactionTemplate(transactionManager);
@@ -137,6 +143,9 @@ public class BookingService {
 
         booking.cancel(now);
         event.release();
-        return bookings.saveAndFlush(booking);
+        Booking saved = bookings.saveAndFlush(booking);
+        // inside this attempt's transaction; the waitlist hears about it only if the attempt commits
+        eventPublisher.publishEvent(new SeatReleased(eventId, UUID.randomUUID(), 1));
+        return saved;
     }
 }

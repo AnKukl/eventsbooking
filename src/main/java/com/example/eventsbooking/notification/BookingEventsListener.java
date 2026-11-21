@@ -8,6 +8,8 @@ import org.springframework.stereotype.Component;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.json.JsonMapper;
 
+import java.time.Clock;
+
 /**
  * Consumes {@link BookingCreated} and stores a notification. Delivery is at-least-once, so the same message can
  * arrive twice; {@link NotificationRepository#insertIfAbsent} makes handling idempotent.
@@ -19,10 +21,12 @@ class BookingEventsListener {
 
     private final NotificationRepository notifications;
     private final JsonMapper mapper;
+    private final Clock clock;
 
-    BookingEventsListener(NotificationRepository notifications, JsonMapper mapper) {
+    BookingEventsListener(NotificationRepository notifications, JsonMapper mapper, Clock clock) {
         this.notifications = notifications;
         this.mapper = mapper;
+        this.clock = clock;
     }
 
     @KafkaListener(topics = BookingCreated.TOPIC, groupId = "notifications",
@@ -31,7 +35,8 @@ class BookingEventsListener {
         BookingCreated event = parse(payload);
         String message = "Booking %d confirmed: user %d booked event %d"
                 .formatted(event.bookingId(), event.userId(), event.targetEventId());
-        int inserted = notifications.insertIfAbsent(event.eventId(), event.bookingId(), event.userId(), message);
+        int inserted = notifications.insertBookingConfirmed(event.eventId(), event.bookingId(), event.targetEventId(),
+                event.userId(), "Booking confirmed", message, clock.instant());
         if (inserted == 0) {
             log.info("Duplicate BookingCreated {} ignored", event.eventId());
         }

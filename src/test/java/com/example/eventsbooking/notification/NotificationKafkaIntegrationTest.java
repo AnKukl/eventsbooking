@@ -69,6 +69,10 @@ class NotificationKafkaIntegrationTest {
                 assertThat(count("booking_id = ?", bookingId)).isEqualTo(1));
         assertThat(jdbc.queryForObject("select user_id from notifications where booking_id = ?",
                 Long.class, bookingId)).isEqualTo(42L);
+        assertThat(jdbc.queryForObject("select type from notifications where booking_id = ?",
+                String.class, bookingId)).isEqualTo("BOOKING_CONFIRMED");
+        assertThat(jdbc.queryForObject("select target_event_id from notifications where booking_id = ?",
+                Long.class, bookingId)).isEqualTo(event.getId());
     }
 
     @Test

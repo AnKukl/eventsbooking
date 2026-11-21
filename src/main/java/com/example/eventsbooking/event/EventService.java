@@ -1,19 +1,24 @@
 package com.example.eventsbooking.event;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.UUID;
+
 @Service
 @Transactional(readOnly = true)
 public class EventService {
 
     private final EventRepository repository;
+    private final ApplicationEventPublisher eventPublisher;
 
-    public EventService(EventRepository repository) {
+    public EventService(EventRepository repository, ApplicationEventPublisher eventPublisher) {
         this.repository = repository;
+        this.eventPublisher = eventPublisher;
     }
 
     /** The organizer is the authenticated user: it is never taken from the request body. */
@@ -48,9 +53,15 @@ public class EventService {
     @Transactional
     public Event update(long id, EventRequest request, long requesterId) {
         Event event = ownedBy(id, requesterId);
+        int capacityBefore = event.getCapacity();
         event.update(request.title(), request.description(), request.startsAt(), request.capacity(),
                 event.getOrganizerId());
         applyPreview(event, request);
+        int added = event.getCapacity() - capacityBefore;
+        if (added > 0) {
+            // delivered to the waitlist only if this transaction commits
+            eventPublisher.publishEvent(new SeatReleased(id, UUID.randomUUID(), added));
+        }
         return event;
     }
 

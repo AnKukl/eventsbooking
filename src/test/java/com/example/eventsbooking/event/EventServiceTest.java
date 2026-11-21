@@ -27,11 +27,13 @@ class EventServiceTest {
 
     private EventRepository repository;
     private EventService service;
+    private org.springframework.context.ApplicationEventPublisher eventPublisher;
 
     @BeforeEach
     void setUp() {
         repository = mock(EventRepository.class);
-        service = new EventService(repository);
+        eventPublisher = mock(org.springframework.context.ApplicationEventPublisher.class);
+        service = new EventService(repository, eventPublisher);
     }
 
     @Test
@@ -235,5 +237,64 @@ class EventServiceTest {
         when(repository.findById(99L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.preview(99L)).isInstanceOf(EventNotFoundException.class);
+    }
+
+    // ---------- SeatReleased on a capacity increase ----------
+
+    private Event fullEvent(int capacity) {
+        Event existing = new Event("Old", "old", IN_A_WEEK, capacity, 1L);
+        for (int i = 0; i < capacity; i++) {
+            existing.book();
+        }
+        org.springframework.test.util.ReflectionTestUtils.setField(existing, "id", 1L);
+        when(repository.findById(1L)).thenReturn(Optional.of(existing));
+        return existing;
+    }
+
+    @Test
+    void raisingCapacityOfAFullEventReleasesTheAddedSeats() {
+        fullEvent(10);
+
+        service.update(1L, new EventRequest("Old", "old", IN_A_WEEK, 13), 1L);
+
+        var captor = org.mockito.ArgumentCaptor.forClass(SeatReleased.class);
+        verify(eventPublisher).publishEvent(captor.capture());
+        assertThat(captor.getValue().eventId()).isEqualTo(1L);
+        assertThat(captor.getValue().seats()).isEqualTo(3);
+    }
+
+    @Test
+    void releasedSeatsEqualTheAddedCapacityEvenWhenTheEventWasNotFull() {
+        Event existing = fullEvent(10);
+        existing.release();
+        existing.release();   // 8 of 10 booked
+
+        service.update(1L, new EventRequest("Old", "old", IN_A_WEEK, 50), 1L);
+
+        var captor = org.mockito.ArgumentCaptor.forClass(SeatReleased.class);
+        verify(eventPublisher).publishEvent(captor.capture());
+        assertThat(captor.getValue().seats()).isEqualTo(40);
+    }
+
+    @Test
+    void sameOrLowerCapacityReleasesNothing() {
+        Event existing = new Event("Old", "old", IN_A_WEEK, 10, 1L);
+        org.springframework.test.util.ReflectionTestUtils.setField(existing, "id", 1L);
+        when(repository.findById(1L)).thenReturn(Optional.of(existing));
+
+        service.update(1L, new EventRequest("Renamed", "old", IN_A_WEEK, 10), 1L);
+        service.update(1L, new EventRequest("Renamed", "old", IN_A_WEEK, 4), 1L);
+
+        verify(eventPublisher, never()).publishEvent(any(Object.class));
+    }
+
+    @Test
+    void aDeniedUpdatePublishesNothing() {
+        fullEvent(10);
+
+        assertThatThrownBy(() -> service.update(1L, new EventRequest("Hijack", "x", IN_A_WEEK, 99), 2L))
+                .isInstanceOf(org.springframework.security.access.AccessDeniedException.class);
+
+        verify(eventPublisher, never()).publishEvent(any(Object.class));
     }
 }
