@@ -160,7 +160,8 @@ class FavoriteApiIntegrationTest {
     void favoritesShowSeatStatusOfEachEvent() throws Exception {
         long scarce = createEvent(1);
         long roomy = createEvent(10);
-        mockMvc.perform(post("/api/events/" + scarce + "/bookings").with(asUser(242))).andExpect(status().isCreated());
+        mockMvc.perform(post("/api/bookings").with(asUser(242))
+                .contentType(MediaType.APPLICATION_JSON).content("{\"eventId\":" + scarce + "}")).andExpect(status().isCreated());
         mockMvc.perform(post("/api/favorites/" + scarce).with(asUser(241))).andExpect(status().isCreated());
         mockMvc.perform(post("/api/favorites/" + roomy).with(asUser(241))).andExpect(status().isCreated());
 

@@ -193,9 +193,10 @@ class SecurityIntegrationTest {
                 .andExpect(status().isForbidden());
 
         // Alice books; the booking is hers whatever the body says
-        String booking = mockMvc.perform(post(location + "/bookings")
+        String booking = mockMvc.perform(post("/api/bookings")
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + aliceToken)
-                        .contentType(MediaType.APPLICATION_JSON).content("{\"userId\": 424242}"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"eventId\": " + location.substring(location.lastIndexOf('/') + 1) + ", \"userId\": 424242}"))
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
         long aliceId = ((Number) JsonPath.read(booking, "$.userId")).longValue();
@@ -203,8 +204,9 @@ class SecurityIntegrationTest {
         assertThat(aliceId).isNotEqualTo(424242L);
 
         // Bob cannot cancel it, and it does not appear in his list; Alice sees it
-        mockMvc.perform(post(location + "/bookings/" + bookingId + "/cancel")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + bobToken))
+        mockMvc.perform(post("/api/bookings/" + bookingId + "/cancel")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + bobToken)
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"reason\":\"OTHER\"}"))
                 .andExpect(status().isNotFound());
         mockMvc.perform(get("/api/bookings/my").header(HttpHeaders.AUTHORIZATION, "Bearer " + bobToken))
                 .andExpect(status().isOk())
@@ -213,8 +215,9 @@ class SecurityIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content.length()").value(1))
                 .andExpect(jsonPath("$.content[0].id").value(bookingId));
-        mockMvc.perform(post(location + "/bookings/" + bookingId + "/cancel")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + aliceToken))
+        mockMvc.perform(post("/api/bookings/" + bookingId + "/cancel")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + aliceToken)
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"reason\":\"OTHER\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("CANCELLED"));
     }

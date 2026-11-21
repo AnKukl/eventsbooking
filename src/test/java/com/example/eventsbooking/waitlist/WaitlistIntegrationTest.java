@@ -308,7 +308,8 @@ class WaitlistIntegrationTest {
     }
 
     private long book(long event, long userId) throws Exception {
-        String body = mockMvc.perform(post("/api/events/" + event + "/bookings").with(asUser(userId)))
+        String body = mockMvc.perform(post("/api/bookings").with(asUser(userId))
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"eventId\":" + event + "}"))
                 .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
         return json.readTree(body).get("id").asLong();
     }
@@ -318,7 +319,8 @@ class WaitlistIntegrationTest {
     }
 
     private void cancel(long event, long booking, long userId) throws Exception {
-        mockMvc.perform(post("/api/events/" + event + "/bookings/" + booking + "/cancel").with(asUser(userId)))
+        mockMvc.perform(post("/api/bookings/" + booking + "/cancel").with(asUser(userId))
+                .contentType(MediaType.APPLICATION_JSON).content("{\"reason\":\"OTHER\"}"))
                 .andExpect(status().isOk());
     }
 

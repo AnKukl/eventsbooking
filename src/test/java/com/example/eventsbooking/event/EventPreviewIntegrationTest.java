@@ -143,7 +143,8 @@ class EventPreviewIntegrationTest {
         String url = "/api/events/" + id + "/preview";
         String etag = mockMvc.perform(get(url)).andReturn().getResponse().getHeader(HttpHeaders.ETAG);
 
-        mockMvc.perform(post("/api/events/" + id + "/bookings").with(user("501").roles("USER")))
+        mockMvc.perform(post("/api/bookings").with(user("501").roles("USER"))
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"eventId\":" + id + "}"))
                 .andExpect(status().isCreated());
 
         mockMvc.perform(get(url).header(HttpHeaders.IF_NONE_MATCH, etag)).andExpect(status().isNotModified());

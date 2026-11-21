@@ -29,7 +29,7 @@ class ReminderRepository {
             SELECT CAST(md5('%2$s:' || a.user_id || ':' || due.id) AS uuid), due.id, a.user_id, '%2$s',
                    '%3$s', 'Reminder: "' || due.title || '" %4$s.', :now
             FROM due
-            JOIN (SELECT event_id, user_id FROM bookings WHERE status = 'ACTIVE'
+            JOIN (SELECT event_id, user_id FROM bookings WHERE status = 'CONFIRMED'
                   UNION
                   SELECT event_id, user_id FROM favorites) a ON a.event_id = due.id
             ON CONFLICT (event_id) DO NOTHING

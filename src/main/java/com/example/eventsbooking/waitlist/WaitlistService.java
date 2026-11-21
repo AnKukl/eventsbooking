@@ -46,7 +46,7 @@ public class WaitlistService {
             throw new ConflictException("Event has free seats",
                     "Event " + eventId + " has free seats: book it instead of waiting");
         }
-        if (bookings.existsByEventIdAndUserIdAndStatus(eventId, userId, BookingStatus.ACTIVE)) {
+        if (bookings.existsByEventIdAndUserIdAndStatusIn(eventId, userId, BookingStatus.ACTIVE)) {
             throw new ConflictException("Already booked", "You have already booked event " + eventId);
         }
         // the unique constraint decides a race between two identical requests

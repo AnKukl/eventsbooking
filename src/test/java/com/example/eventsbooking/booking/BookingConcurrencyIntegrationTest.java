@@ -132,7 +132,7 @@ class BookingConcurrencyIntegrationTest {
     @Test
     void databaseHasUniqueConstraintOnEventAndUser() {
         Event event = newEvent(5);
-        String insert = "insert into bookings (event_id, user_id) values (?, ?)";
+        String insert = "insert into bookings (event_id, user_id, status) values (?, ?, 'CONFIRMED')";
         jdbc.update(insert, event.getId(), 1L);
 
         assertThatThrownBy(() -> jdbc.update(insert, event.getId(), 1L))
@@ -150,12 +150,12 @@ class BookingConcurrencyIntegrationTest {
     @Test
     void fullEventReturns409ProblemDetailOverHttp() throws Exception {
         Event event = newEvent(1);
-        String url = "/api/events/" + event.getId() + "/bookings";
+        String body = "{\"eventId\":" + event.getId() + "}";
 
-        mockMvc.perform(post(url))
+        mockMvc.perform(post("/api/bookings").contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isCreated());
 
-        mockMvc.perform(post(url).with(org.springframework.security.test.web.servlet.request
+        mockMvc.perform(post("/api/bookings").contentType(MediaType.APPLICATION_JSON).content(body).with(org.springframework.security.test.web.servlet.request
                         .SecurityMockMvcRequestPostProcessors.user("2").roles("USER")))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.status").value(409))

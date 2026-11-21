@@ -94,7 +94,7 @@ class WaitlistServiceTest {
     @Test
     void someoneWithAnActiveBookingCannotJoin() {
         soldOutEvent(NOW.plusSeconds(86_400));
-        when(bookings.existsByEventIdAndUserIdAndStatus(5L, 7L, BookingStatus.ACTIVE)).thenReturn(true);
+        when(bookings.existsByEventIdAndUserIdAndStatusIn(5L, 7L, BookingStatus.ACTIVE)).thenReturn(true);
 
         assertThatThrownBy(() -> service.join(7L, 5L, WaitlistChannel.EMAIL))
                 .isInstanceOf(ConflictException.class)

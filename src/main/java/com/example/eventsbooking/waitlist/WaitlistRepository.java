@@ -31,7 +31,7 @@ public interface WaitlistRepository extends JpaRepository<WaitlistEntry, Long> {
             SELECT w.* FROM waitlist w
             WHERE w.event_id = :eventId AND w.notified_at IS NULL
               AND NOT EXISTS (SELECT 1 FROM bookings b
-                              WHERE b.event_id = w.event_id AND b.user_id = w.user_id AND b.status = 'ACTIVE')
+                              WHERE b.event_id = w.event_id AND b.user_id = w.user_id AND b.status IN ('HOLD', 'CONFIRMED'))
             ORDER BY w.created_at, w.id
             LIMIT 1
             FOR UPDATE OF w SKIP LOCKED

@@ -64,6 +64,7 @@ class NotificationKafkaIntegrationTest {
                 Instant.now().plus(10, ChronoUnit.DAYS), 5), 1L);
 
         long bookingId = bookingService.book(event.getId(), 42L).getId();
+        bookingService.confirm(bookingId, 42L);   // the message is published when the booking is confirmed
 
         await().atMost(Duration.ofSeconds(30)).untilAsserted(() ->
                 assertThat(count("booking_id = ?", bookingId)).isEqualTo(1));

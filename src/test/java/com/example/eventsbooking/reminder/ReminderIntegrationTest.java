@@ -69,9 +69,9 @@ class ReminderIntegrationTest {
     @Test
     void remindsEveryoneWithABookingOrAFavoriteExactlyOnce() {
         long event = event("Jazz night", START.plus(Duration.ofHours(23)));
-        booking(event, 1001, "ACTIVE");
+        booking(event, 1001, "CONFIRMED");
         favorite(event, 1002);
-        booking(event, 1003, "ACTIVE");
+        booking(event, 1003, "CONFIRMED");
         favorite(event, 1003);                   // both: still one reminder
         booking(event, 1005, "CANCELLED");       // cancelled: no reminder
         // 1004 has nothing to do with the event
@@ -88,7 +88,7 @@ class ReminderIntegrationTest {
     @Test
     void runningTheTaskTwiceCreatesNoDuplicates() {
         long event = event("Twice", START.plus(Duration.ofHours(20)));
-        booking(event, 1101, "ACTIVE");
+        booking(event, 1101, "CONFIRMED");
         favorite(event, 1102);
 
         service.sendDueReminders();
@@ -105,7 +105,7 @@ class ReminderIntegrationTest {
     void twoInstancesRunningAtTheSameTimeStillRemindOnce() throws Exception {
         long event = event("Two nodes", START.plus(Duration.ofHours(10)));
         for (int user = 1201; user <= 1205; user++) {
-            booking(event, user, "ACTIVE");
+            booking(event, user, "CONFIRMED");
         }
         ExecutorService pool = Executors.newFixedThreadPool(4);
         CountDownLatch go = new CountDownLatch(1);
@@ -130,7 +130,7 @@ class ReminderIntegrationTest {
     @Test
     void theTwoHourReminderIsSeparateFromTheDayBeforeOne() {
         long event = event("Both", START.plus(Duration.ofHours(23)));
-        booking(event, 1301, "ACTIVE");
+        booking(event, 1301, "CONFIRMED");
 
         service.sendDueReminders();                   // 23 h before: the 24 h reminder
         clock.advance(Duration.ofMinutes(21 * 60 + 30));
@@ -145,7 +145,7 @@ class ReminderIntegrationTest {
     @Test
     void anEventCreatedLessThanTwoHoursAheadGetsOnlyTheTwoHourReminder() {
         long event = event("Last minute", START.plus(Duration.ofHours(1)));
-        booking(event, 1401, "ACTIVE");
+        booking(event, 1401, "CONFIRMED");
 
         service.sendDueReminders();
 
@@ -157,8 +157,8 @@ class ReminderIntegrationTest {
     void eventsOutsideTheWindowsAreLeftAloneUntilTheirTimeComes() {
         long far = event("Far away", START.plus(Duration.ofHours(30)));
         long past = event("Already over", START.minus(Duration.ofHours(1)));
-        booking(far, 1501, "ACTIVE");
-        booking(past, 1501, "ACTIVE");
+        booking(far, 1501, "CONFIRMED");
+        booking(past, 1501, "CONFIRMED");
 
         service.sendDueReminders();
 

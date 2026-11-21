@@ -1,12 +1,17 @@
 package com.example.eventsbooking.booking;
 
+import com.example.eventsbooking.common.ConflictException;
 import com.example.eventsbooking.event.Event;
 import com.example.eventsbooking.event.EventNotFoundException;
 import com.example.eventsbooking.event.EventRepository;
 import com.example.eventsbooking.event.SeatReleased;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.OptimisticLockingFailureException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -18,36 +23,34 @@ import java.util.UUID;
 import java.util.function.Supplier;
 
 /**
- * Бронирование места на мероприятие и отмена брони.
+ * Booking, confirmation and cancellation.
  *
- * <h2>Почему оптимистическая блокировка (@Version на Event)</h2>
+ * <h2>Why optimistic locking (@Version on Event)</h2>
+ * Booking and cancelling change {@code Event.bookedCount}, so two transactions that read the same state cannot both
+ * commit: the loser gets an {@link OptimisticLockingFailureException} and is simply retried (it either takes what is left
+ * or sees the event is full and answers 409). No database locks are held between reading and writing, and there are no
+ * deadlocks. Second line of defence: a unique index on the active booking per (event, user) and
+ * {@code CHECK (booked_count <= capacity)}. The trade-off, and when to use an atomic UPDATE instead, are in
+ * docs/decisions.md.
+ *
+ * <h2>Life of a booking</h2>
  * <ul>
- *   <li>Транзакция бронирования короткая (прочитать событие, вставить бронь, обновить счётчик), и
- *       конфликт возникает только когда <em>два человека одновременно берут места одного и того же
- *       события</em>. Для большинства событий это редкость, поэтому дешевле обнаружить конфликт при
- *       записи, чем заставлять каждого ждать на блокировке строки.</li>
- *   <li>Оптимистическая блокировка не держит блокировок БД между чтением и записью и не создаёт
- *       взаимоблокировок. Проигравшая транзакция получает {@link OptimisticLockingFailureException}
- *       и просто повторяется: при повторе она либо займёт оставшееся место, либо увидит, что мест
- *       нет, и вернёт 409.</li>
- *   <li>Версия защищает именно инвариант «занято &lt;= capacity»: и бронь, и отмена меняют
- *       {@code Event.bookedCount}, а значит и версию, поэтому две транзакции, прочитавшие одно и то же
- *       состояние, не смогут обе зафиксироваться.</li>
- *   <li>Вторая линия защиты — ограничения в БД: уникальный индекс активной брони на (event_id, user_id)
- *       и {@code CHECK (booked_count <= capacity)}.</li>
+ *   <li>{@link #book}: a HOLD that keeps the seats for {@code app.booking.hold-duration} (10 minutes).</li>
+ *   <li>{@link #confirm}: HOLD to CONFIRMED before the hold expires; only now is the booking announced to Kafka.</li>
+ *   <li>{@link #cancel}: seats are released. A confirmed booking cancelled at least {@code cancellation-notice} (24 h)
+ *       before the start is REFUND_PENDING and a refund is requested; later (or an unpaid HOLD) it is simply CANCELLED.</li>
+ *   <li>An unconfirmed hold is released by {@link HoldExpiryService}.</li>
  * </ul>
- * Компромисс: при очень высокой конкуренции за одно событие (распродажа) повторов становится много, и
- * там лучше подошёл бы атомарный {@code UPDATE ... WHERE booked_count < capacity} или пессимистическая
- * блокировка. Подробности — в docs/decisions.md.
  *
- * <h2>Время</h2>
- * Текущее время берётся только из {@link Clock}, поэтому правило «отмена не позже N часов до начала»
- * проверяется в тестах детерминированно, без {@code Thread.sleep} и реального {@code now()}.
+ * <h2>Time</h2>
+ * Current time comes only from {@link Clock}, so every rule is tested without sleeping.
  */
 @Service
 public class BookingService {
 
     static final int MAX_ATTEMPTS = 5;
+
+    private static final Logger log = LoggerFactory.getLogger(BookingService.class);
 
     private final EventRepository events;
     private final BookingRepository bookings;
@@ -56,27 +59,42 @@ public class BookingService {
     private final BookingProperties properties;
     private final BookingEventPublisher publisher;
     private final ApplicationEventPublisher eventPublisher;
+    private final PaymentGateway payments;
+    private final IdempotencyKeys idempotencyKeys;
 
     public BookingService(EventRepository events, BookingRepository bookings,
             PlatformTransactionManager transactionManager, Clock clock, BookingProperties properties,
-            BookingEventPublisher publisher, ApplicationEventPublisher eventPublisher) {
-        this.eventPublisher = eventPublisher;
+            BookingEventPublisher publisher, ApplicationEventPublisher eventPublisher, PaymentGateway payments,
+            IdempotencyKeys idempotencyKeys) {
         this.events = events;
         this.bookings = bookings;
         this.transaction = new TransactionTemplate(transactionManager);
         this.clock = clock;
         this.properties = properties;
         this.publisher = publisher;
+        this.eventPublisher = eventPublisher;
+        this.payments = payments;
+        this.idempotencyKeys = idempotencyKeys;
     }
 
+    /** One seat, no Idempotency-Key. */
     public Booking book(long eventId, long userId) {
+        return book(eventId, userId, 1, null).booking();
+    }
+
+    /**
+     * Holds {@code seats} seats for the user. With an {@code idempotencyKey} a repeat of the same request returns the
+     * booking made the first time ({@code created == false}) instead of failing as "already booked".
+     */
+    public BookingOutcome book(long eventId, long userId, int seats, String idempotencyKey) {
+        int max = properties.maxSeatsPerBooking();
+        if (seats < 1 || seats > max) {
+            throw new InvalidSeatCountException(max);
+        }
         try {
-            Booking booking = inTransactionWithRetry(eventId, () -> bookOnce(eventId, userId));
-            // the transaction has committed here: only now may the world hear about the booking
-            publisher.publish(booking);
-            return booking;
+            return inTransactionWithRetry(eventId, () -> bookOnce(eventId, userId, seats, idempotencyKey));
         } catch (DataIntegrityViolationException e) {
-            if (bookings.existsByEventIdAndUserIdAndStatus(eventId, userId, BookingStatus.ACTIVE)) {
+            if (bookings.existsByEventIdAndUserIdAndStatusIn(eventId, userId, BookingStatus.ACTIVE)) {
                 throw new AlreadyBookedException(eventId, userId);
             }
             throw e;
@@ -84,21 +102,38 @@ public class BookingService {
     }
 
     /**
-     * Отменяет бронь и возвращает место. Отмена запрещена, если до начала события осталось меньше
-     * {@code app.booking.cancellation-notice} (ровно столько — ещё можно).
+     * HOLD to CONFIRMED (the payment stage will call this when the payment succeeds). Confirming a booking that is
+     * already confirmed is harmless. The Kafka message is sent only after the transaction has committed.
      */
-    /** Bookings of one user, newest first (the caller passes the authenticated user). */
-    public org.springframework.data.domain.Page<Booking> findMine(long userId, org.springframework.data.domain.Pageable pageable) {
-        return bookings.findByUserId(userId, pageable);
-    }
-
-    public Booking cancel(long eventId, long bookingId, long requesterId) {
-        return inTransactionWithRetry(eventId, () -> cancelOnce(eventId, bookingId, requesterId));
+    public Booking confirm(long bookingId, long requesterId) {
+        Confirmation confirmation = transaction.execute(status -> confirmOnce(bookingId, requesterId));
+        if (confirmation.changed()) {
+            publisher.publish(confirmation.booking());
+        }
+        return confirmation.booking();
     }
 
     /**
-     * Не помечен @Transactional намеренно: каждая попытка выполняется в своей новой транзакции, иначе
-     * повтор после конфликта версий шёл бы в уже откаченной транзакции и снова читал устаревшие данные.
+     * Cancels the booking and frees its seats. A confirmed booking cancelled at least {@code cancellation-notice}
+     * before the start becomes REFUND_PENDING and the payment gateway is asked for a refund; otherwise CANCELLED.
+     */
+    public Booking cancel(long bookingId, long requesterId, CancellationReason reason) {
+        long eventId = ownBooking(bookingId, requesterId).getEventId();
+        Booking cancelled = inTransactionWithRetry(eventId, () -> cancelOnce(bookingId, requesterId, reason));
+        if (cancelled.getStatus() == BookingStatus.REFUND_PENDING) {
+            requestRefund(cancelled);
+        }
+        return cancelled;
+    }
+
+    /** Bookings of one user, newest first (the caller passes the authenticated user). */
+    public Page<Booking> findMine(long userId, Pageable pageable) {
+        return bookings.findByUserId(userId, pageable);
+    }
+
+    /**
+     * Not annotated with @Transactional on purpose: every attempt runs in its own new transaction, otherwise a retry
+     * after a version conflict would run inside the already rolled-back one and read stale data again.
      */
     private <T> T inTransactionWithRetry(long eventId, Supplier<T> action) {
         for (int attempt = 1; ; attempt++) {
@@ -112,40 +147,99 @@ public class BookingService {
         }
     }
 
-    private Booking bookOnce(long eventId, long userId) {
+    private BookingOutcome bookOnce(long eventId, long userId, int seats, String key) {
+        if (key != null && !idempotencyKeys.claim(userId, key, eventId, seats)) {
+            return replay(userId, key, eventId, seats);
+        }
         Event event = events.findById(eventId).orElseThrow(() -> new EventNotFoundException(eventId));
-        if (!event.getStartsAt().isAfter(clock.instant())) {
+        Instant now = clock.instant();
+        if (!event.getStartsAt().isAfter(now)) {
             throw new EventAlreadyStartedException(eventId);
         }
-        if (bookings.existsByEventIdAndUserIdAndStatus(eventId, userId, BookingStatus.ACTIVE)) {
+        if (bookings.existsByEventIdAndUserIdAndStatusIn(eventId, userId, BookingStatus.ACTIVE)) {
             throw new AlreadyBookedException(eventId, userId);
         }
-        event.book();
-        // saveAndFlush: конфликт версии и нарушение уникальности проявляются здесь, внутри попытки
-        return bookings.saveAndFlush(new Booking(eventId, userId));
+        event.book(seats);
+        // saveAndFlush: a version conflict or a unique violation shows up here, inside the attempt
+        Booking booking = bookings.saveAndFlush(
+                new Booking(eventId, userId, seats, now, now.plus(properties.holdDuration())));
+        if (key != null) {
+            idempotencyKeys.attach(userId, key, booking.getId());
+        }
+        return new BookingOutcome(booking, true);
     }
 
-    private Booking cancelOnce(long eventId, long bookingId, long requesterId) {
-        Event event = events.findById(eventId).orElseThrow(() -> new EventNotFoundException(eventId));
-        Booking booking = bookings.findById(bookingId)
-                // someone else's booking looks exactly like a missing one: its existence is not revealed
-                .filter(found -> found.getEventId() == eventId && found.getUserId() == requesterId)
-                .orElseThrow(() -> new BookingNotFoundException(bookingId));
-        if (booking.getStatus() == BookingStatus.CANCELLED) {
+    private BookingOutcome replay(long userId, String key, long eventId, int seats) {
+        IdempotencyKeys.Entry first = idempotencyKeys.find(userId, key)
+                .orElseThrow(() -> new IllegalStateException("Idempotency key is taken but has no booking"));
+        if (first.eventId() != eventId || first.seats() != seats) {
+            throw new IdempotencyKeyReusedException();
+        }
+        Booking booking = bookings.findById(first.bookingId())
+                .orElseThrow(() -> new BookingNotFoundException(first.bookingId()));
+        return new BookingOutcome(booking, false);
+    }
+
+    private record Confirmation(Booking booking, boolean changed) {
+    }
+
+    private Confirmation confirmOnce(long bookingId, long requesterId) {
+        Booking booking = ownBooking(bookingId, requesterId);
+        if (booking.getStatus() == BookingStatus.CONFIRMED) {
+            return new Confirmation(booking, false);
+        }
+        if (booking.getStatus() != BookingStatus.HOLD) {
+            throw new BookingNotOnHoldException(bookingId);
+        }
+        Instant now = clock.instant();
+        if (!now.isBefore(booking.getHoldExpiresAt())) {
+            throw new HoldExpiredException();
+        }
+        booking.confirm(now);
+        return new Confirmation(bookings.saveAndFlush(booking), true);
+    }
+
+    private Booking cancelOnce(long bookingId, long requesterId, CancellationReason reason) {
+        Booking booking = ownBooking(bookingId, requesterId);
+        if (booking.getStatus() == BookingStatus.CANCELLED || booking.getStatus() == BookingStatus.REFUND_PENDING) {
             throw new BookingAlreadyCancelledException(bookingId);
         }
-
+        Event event = events.findById(booking.getEventId())
+                .orElseThrow(() -> new EventNotFoundException(booking.getEventId()));
         Instant now = clock.instant();
-        Duration notice = properties.cancellationNotice();
-        if (Duration.between(now, event.getStartsAt()).compareTo(notice) < 0) {
-            throw new CancellationTooLateException(notice);
+        if (!event.getStartsAt().isAfter(now)) {
+            throw new ConflictException("Event already started",
+                    "The event has already started: its bookings can no longer be cancelled");
         }
+        // an unconfirmed hold was never paid for: nothing to refund, whenever it is cancelled
+        Duration untilStart = Duration.between(now, event.getStartsAt());
+        boolean refund = booking.getStatus() == BookingStatus.CONFIRMED
+                && untilStart.compareTo(properties.cancellationNotice()) >= 0;
 
-        booking.cancel(now);
-        event.release();
+        booking.cancel(now, reason.name(), refund);
+        event.release(booking.getSeats());
         Booking saved = bookings.saveAndFlush(booking);
-        // inside this attempt's transaction; the waitlist hears about it only if the attempt commits
-        eventPublisher.publishEvent(new SeatReleased(eventId, UUID.randomUUID(), 1));
+        // inside this attempt's transaction: the waitlist hears about it only if the attempt commits
+        eventPublisher.publishEvent(new SeatReleased(booking.getEventId(), UUID.randomUUID(), booking.getSeats()));
         return saved;
+    }
+
+    /** Someone else's booking looks exactly like a missing one: its existence is not revealed. */
+    private Booking ownBooking(long bookingId, long requesterId) {
+        return bookings.findById(bookingId)
+                .filter(found -> found.getUserId() == requesterId)
+                .orElseThrow(() -> new BookingNotFoundException(bookingId));
+    }
+
+    /**
+     * After the commit. A failing gateway must not undo the cancellation: the booking stays REFUND_PENDING and the
+     * request is repeated later (the payment stage reconciles pending refunds).
+     */
+    private void requestRefund(Booking booking) {
+        try {
+            payments.refund(booking);
+        } catch (RuntimeException e) {
+            log.error("Refund request for booking {} failed; it stays REFUND_PENDING", booking.getId(), e);
+        }
     }
 }

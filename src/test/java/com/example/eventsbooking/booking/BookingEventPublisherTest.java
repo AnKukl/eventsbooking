@@ -85,7 +85,8 @@ class BookingEventPublisherTest {
     }
 
     private static Booking booking(long id, long eventId, long userId) {
-        Booking booking = new Booking(eventId, userId);
+        Booking booking = new Booking(eventId, userId, 1, java.time.Instant.parse("2030-01-01T10:00:00Z"),
+                java.time.Instant.parse("2030-01-01T10:10:00Z"));
         ReflectionTestUtils.setField(booking, "id", id);
         return booking;
     }

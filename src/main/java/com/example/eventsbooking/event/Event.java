@@ -81,20 +81,33 @@ public class Event {
         update(title, description, startsAt, capacity, organizerId);
     }
 
-    /** Занимает одно место. Меняет состояние события, а значит и версию — это и есть точка конкуренции. */
+    /** Takes one seat. */
     public void book() {
-        if (bookedCount >= capacity) {
-            throw new EventFullException(id);
-        }
-        bookedCount++;
+        book(1);
     }
 
-    /** Возвращает место (отмена брони). Так же меняет версию, как и {@link #book()}. */
-    public void release() {
-        if (bookedCount <= 0) {
-            throw new IllegalStateException("Event " + id + " has no booked seats to release");
+    /**
+     * Takes {@code seats} seats at once or none. This changes the event, and with it its version: that is the point of
+     * contention between concurrent bookings.
+     */
+    public void book(int seats) {
+        if (seats < 1 || bookedCount + seats > capacity) {
+            throw new EventFullException(id);
         }
-        bookedCount--;
+        bookedCount += seats;
+    }
+
+    /** Gives one seat back. */
+    public void release() {
+        release(1);
+    }
+
+    /** Gives {@code seats} seats back (a cancellation or an expired hold); bumps the version like {@link #book(int)}. */
+    public void release(int seats) {
+        if (seats < 1 || bookedCount < seats) {
+            throw new IllegalStateException("Event " + id + " has no " + seats + " booked seats to release");
+        }
+        bookedCount -= seats;
     }
 
     public void update(String title, String description, Instant startsAt, int capacity, long organizerId) {

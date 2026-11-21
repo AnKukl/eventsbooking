@@ -4,16 +4,14 @@ import com.example.eventsbooking.event.Event;
 import com.example.eventsbooking.event.EventFullException;
 import com.example.eventsbooking.event.EventNotFoundException;
 import com.example.eventsbooking.event.EventRepository;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.orm.ObjectOptimisticLockingFailureException;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.PlatformTransactionManager;
 
-import java.time.Instant;
 import java.time.Clock;
 import java.time.Duration;
+import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.Optional;
 
@@ -21,162 +19,253 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.AdditionalAnswers.returnsFirstArg;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+/** Booking (HOLD), confirmation and the idempotency key, with the clock fixed: no sleeping, no real "now". */
 class BookingServiceTest {
 
-    private static final Instant START = Instant.parse("2030-02-01T10:00:00Z");
+    private static final Instant NOW = Instant.parse("2030-01-01T10:00:00Z");
+    private static final Instant STARTS = NOW.plus(Duration.ofDays(10));
 
-    private EventRepository events;
-    private BookingRepository bookings;
-    private BookingService service;
-    private BookingEventPublisher publisher;
-    private PlatformTransactionManager txManager;
+    private final EventRepository events = mock(EventRepository.class);
+    private final BookingRepository bookings = mock(BookingRepository.class);
+    private final BookingEventPublisher kafka = mock(BookingEventPublisher.class);
+    private final ApplicationEventPublisher spring = mock(ApplicationEventPublisher.class);
+    private final PaymentGateway payments = mock(PaymentGateway.class);
+    private final IdempotencyKeys keys = mock(IdempotencyKeys.class);
+    private final BookingService service = new BookingService(events, bookings,
+            mock(PlatformTransactionManager.class), Clock.fixed(NOW, ZoneOffset.UTC),
+            new BookingProperties(Duration.ofHours(24), 4, Duration.ofMinutes(10)), kafka, spring, payments, keys);
 
-    @BeforeEach
-    void setUp() {
-        events = mock(EventRepository.class);
-        bookings = mock(BookingRepository.class);
-        publisher = mock(BookingEventPublisher.class);
-        txManager = mock(PlatformTransactionManager.class);
-        service = new BookingService(events, bookings, txManager,
-                Clock.fixed(START.minus(Duration.ofDays(1)), ZoneOffset.UTC), new BookingProperties(Duration.ofHours(24)), publisher,
-                mock(org.springframework.context.ApplicationEventPublisher.class));
+    // ---------- booking holds the seats ----------
+
+    @Test
+    void aNewBookingIsAHoldOfTenMinutesThatTakesTheSeats() {
+        Event event = event(10);
+
+        Booking booking = service.book(1L, 10L, 2, null).booking();
+
+        assertThat(booking.getStatus()).isEqualTo(BookingStatus.HOLD);
+        assertThat(booking.getSeats()).isEqualTo(2);
+        assertThat(booking.getHoldExpiresAt()).isEqualTo(NOW.plus(Duration.ofMinutes(10)));
+        assertThat(booking.getCreatedAt()).isEqualTo(NOW);
+        assertThat(event.getBookedCount()).isEqualTo(2);
+        verifyNoInteractions(kafka);   // nobody hears about a booking that is not confirmed yet
     }
 
     @Test
-    void bookSavesBookingAndIncrementsBookedCount() {
-        Event event = event(2);
-        when(events.findById(1L)).thenReturn(Optional.of(event));
-        when(bookings.saveAndFlush(any(Booking.class))).thenAnswer(returnsFirstArg());
+    void theConvenienceMethodBooksOneSeat() {
+        Event event = event(10);
 
-        Booking booking = service.book(1L, 10L);
-
-        assertThat(booking.getEventId()).isEqualTo(1L);
-        assertThat(booking.getUserId()).isEqualTo(10L);
+        assertThat(service.book(1L, 10L).getSeats()).isEqualTo(1);
         assertThat(event.getBookedCount()).isEqualTo(1);
     }
 
     @Test
-    void bookThrowsWhenEventDoesNotExist() {
+    void moreSeatsThanTheServerLimitAreRejectedBeforeAnythingIsRead() {
+        event(10);
+
+        assertThatThrownBy(() -> service.book(1L, 10L, 5, null)).isInstanceOf(InvalidSeatCountException.class)
+                .hasMessageContaining("between 1 and 4");
+
+        verifyNoInteractions(events);
+        verifyNoInteractions(bookings);
+    }
+
+    @Test
+    void exactlyTheLimitIsAllowed() {
+        event(10);
+
+        assertThat(service.book(1L, 10L, 4, null).booking().getSeats()).isEqualTo(4);
+    }
+
+    @Test
+    void zeroOrNegativeSeatsAreRejected() {
+        assertThatThrownBy(() -> service.book(1L, 10L, 0, null)).isInstanceOf(InvalidSeatCountException.class);
+        assertThatThrownBy(() -> service.book(1L, 10L, -1, null)).isInstanceOf(InvalidSeatCountException.class);
+    }
+
+    @Test
+    void notEnoughFreeSeatsIsAConflict() {
+        Event event = event(3);
+        event.book(2);
+
+        assertThatThrownBy(() -> service.book(1L, 10L, 2, null)).isInstanceOf(EventFullException.class);
+
+        assertThat(event.getBookedCount()).isEqualTo(2);
+        verify(bookings, never()).saveAndFlush(any());
+    }
+
+    @Test
+    void theLastFreeSeatsCanBeTakenTogether() {
+        Event event = event(3);
+        event.book(1);
+
+        service.book(1L, 10L, 2, null);
+
+        assertThat(event.getBookedCount()).isEqualTo(3);
+    }
+
+    @Test
+    void aSecondActiveBookingOfTheSameEventIsRefused() {
+        event(10);
+        when(bookings.existsByEventIdAndUserIdAndStatusIn(1L, 10L, BookingStatus.ACTIVE)).thenReturn(true);
+
+        assertThatThrownBy(() -> service.book(1L, 10L, 1, null)).isInstanceOf(AlreadyBookedException.class);
+    }
+
+    @Test
+    void aStartedEventCannotBeBooked() {
+        Event event = new Event("Started", null, NOW, 10, 1L);
+        ReflectionTestUtils.setField(event, "id", 1L);
+        when(events.findById(1L)).thenReturn(Optional.of(event));
+
+        assertThatThrownBy(() -> service.book(1L, 10L, 1, null)).isInstanceOf(EventAlreadyStartedException.class);
+    }
+
+    @Test
+    void anUnknownEventIsNotFound() {
         when(events.findById(99L)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> service.book(99L, 10L)).isInstanceOf(EventNotFoundException.class);
+        assertThatThrownBy(() -> service.book(99L, 10L, 1, null)).isInstanceOf(EventNotFoundException.class);
+    }
+
+    // ---------- Idempotency-Key ----------
+
+    @Test
+    void aFirstRequestWithAKeyBooksAndRemembersTheBooking() {
+        event(10);
+        when(keys.claim(10L, "k-1", 1L, 2)).thenReturn(true);
+
+        BookingOutcome outcome = service.book(1L, 10L, 2, "k-1");
+
+        assertThat(outcome.created()).isTrue();
+        verify(keys).attach(10L, "k-1", outcome.booking().getId());
     }
 
     @Test
-    void bookThrowsWhenUserAlreadyBookedTheEvent() {
-        when(events.findById(1L)).thenReturn(Optional.of(event(5)));
-        when(bookings.existsByEventIdAndUserIdAndStatus(1L, 10L, BookingStatus.ACTIVE)).thenReturn(true);
+    void aRepeatedKeyReturnsTheSameBookingAndTouchesNothing() {
+        Booking existing = holdOf(77L, 2);
+        when(keys.claim(10L, "k-1", 1L, 2)).thenReturn(false);
+        when(keys.find(10L, "k-1")).thenReturn(Optional.of(new IdempotencyKeys.Entry(1L, 2, 77L)));
+        when(bookings.findById(77L)).thenReturn(Optional.of(existing));
 
-        assertThatThrownBy(() -> service.book(1L, 10L)).isInstanceOf(AlreadyBookedException.class);
+        BookingOutcome outcome = service.book(1L, 10L, 2, "k-1");
+
+        assertThat(outcome.created()).isFalse();
+        assertThat(outcome.booking()).isSameAs(existing);
+        verifyNoInteractions(events);
         verify(bookings, never()).saveAndFlush(any());
     }
 
     @Test
-    void bookThrowsWhenEventIsFull() {
-        Event full = event(1);
-        full.book();
-        when(events.findById(1L)).thenReturn(Optional.of(full));
+    void theSameKeyWithAnotherRequestIsAConflict() {
+        when(keys.claim(10L, "k-1", 1L, 3)).thenReturn(false);
+        when(keys.find(10L, "k-1")).thenReturn(Optional.of(new IdempotencyKeys.Entry(1L, 2, 77L)));
 
-        assertThatThrownBy(() -> service.book(1L, 10L)).isInstanceOf(EventFullException.class);
-        verify(bookings, never()).saveAndFlush(any());
+        assertThatThrownBy(() -> service.book(1L, 10L, 3, "k-1")).isInstanceOf(IdempotencyKeyReusedException.class);
     }
 
     @Test
-    void bookRetriesAfterOptimisticLockFailure() {
-        when(events.findById(1L)).thenAnswer(invocation -> Optional.of(event(5)));
-        when(bookings.saveAndFlush(any(Booking.class)))
-                .thenThrow(new ObjectOptimisticLockingFailureException(Event.class, 1L))
-                .thenAnswer(returnsFirstArg());
+    void withoutAKeyTheKeyStoreIsNeverUsed() {
+        event(10);
 
-        Booking booking = service.book(1L, 10L);
+        service.book(1L, 10L, 1, null);
 
-        assertThat(booking.getUserId()).isEqualTo(10L);
-        verify(bookings, times(2)).saveAndFlush(any());
+        verifyNoInteractions(keys);
     }
 
-    @Test
-    void bookGivesUpAfterMaxAttempts() {
-        when(events.findById(1L)).thenAnswer(invocation -> Optional.of(event(5)));
-        when(bookings.saveAndFlush(any(Booking.class)))
-                .thenThrow(new ObjectOptimisticLockingFailureException(Event.class, 1L));
-
-        assertThatThrownBy(() -> service.book(1L, 10L)).isInstanceOf(ConcurrentBookingException.class);
-        verify(bookings, times(BookingService.MAX_ATTEMPTS)).saveAndFlush(any());
-    }
+    // ---------- confirm ----------
 
     @Test
-    void uniqueConstraintViolationIsReportedAsAlreadyBooked() {
-        when(events.findById(1L)).thenAnswer(invocation -> Optional.of(event(5)));
-        when(bookings.existsByEventIdAndUserIdAndStatus(1L, 10L, BookingStatus.ACTIVE)).thenReturn(false, true);
-        when(bookings.saveAndFlush(any(Booking.class)))
-                .thenThrow(new DataIntegrityViolationException("uq_bookings_event_user"));
-
-        assertThatThrownBy(() -> service.book(1L, 10L)).isInstanceOf(AlreadyBookedException.class);
-    }
-
-    @Test
-    void successfulBookingPublishesEventAfterTheTransactionCommits() {
-        when(events.findById(1L)).thenReturn(Optional.of(event(2)));
+    void confirmingAHoldMakesItConfirmedAndAnnouncesItAfterTheCommit() {
+        Booking hold = holdOf(5L, 1);
         when(bookings.saveAndFlush(any(Booking.class))).thenAnswer(returnsFirstArg());
 
-        Booking booking = service.book(1L, 10L);
+        Booking confirmed = service.confirm(5L, 10L);
 
-        var order = org.mockito.Mockito.inOrder(txManager, publisher);
-        order.verify(txManager).commit(any());
-        order.verify(publisher).publish(booking);
+        assertThat(confirmed.getStatus()).isEqualTo(BookingStatus.CONFIRMED);
+        assertThat(confirmed).isSameAs(hold);
+        verify(kafka).publish(hold);
     }
 
     @Test
-    void failedBookingPublishesNothing() {
-        Event full = event(1);
-        full.book();
-        when(events.findById(1L)).thenReturn(Optional.of(full));
+    void aHoldCannotBeConfirmedFromTheMomentItExpires() {
+        holdOf(5L, 1, NOW);   // expires exactly now
 
-        assertThatThrownBy(() -> service.book(1L, 10L)).isInstanceOf(EventFullException.class);
+        assertThatThrownBy(() -> service.confirm(5L, 10L)).isInstanceOf(HoldExpiredException.class);
 
-        org.mockito.Mockito.verifyNoInteractions(publisher);
+        verifyNoInteractions(kafka);
     }
 
     @Test
-    void bookingAnEventThatHasAlreadyStartedIsRejected() {
-        Event started = new Event("Jazz night", null, START.minus(Duration.ofDays(2)), 5, 1L);
-        ReflectionTestUtils.setField(started, "id", 1L);
-        when(events.findById(1L)).thenReturn(Optional.of(started));
+    void aHoldThatHasAnotherNanosecondLeftCanBeConfirmed() {
+        holdOf(5L, 1, NOW.plusNanos(1));
+        when(bookings.saveAndFlush(any(Booking.class))).thenAnswer(returnsFirstArg());
 
-        assertThatThrownBy(() -> service.book(1L, 10L)).isInstanceOf(EventAlreadyStartedException.class);
-
-        assertThat(started.getBookedCount()).isZero();
-        verify(bookings, never()).saveAndFlush(any());
-        org.mockito.Mockito.verifyNoInteractions(publisher);
+        assertThat(service.confirm(5L, 10L).getStatus()).isEqualTo(BookingStatus.CONFIRMED);
     }
 
     @Test
-    void bookingAnEventStartingRightNowIsRejected() {
-        Event starting = new Event("Jazz night", null, START.minus(Duration.ofDays(1)), 5, 1L);
-        ReflectionTestUtils.setField(starting, "id", 1L);
-        when(events.findById(1L)).thenReturn(Optional.of(starting));   // clock = START - 1 day = startsAt
+    void confirmingAnAlreadyConfirmedBookingIsHarmlessAndAnnouncesNothingAgain() {
+        Booking booking = holdOf(5L, 1);
+        booking.confirm(NOW);
 
-        assertThatThrownBy(() -> service.book(1L, 10L)).isInstanceOf(EventAlreadyStartedException.class);
+        assertThat(service.confirm(5L, 10L).getStatus()).isEqualTo(BookingStatus.CONFIRMED);
+
+        verifyNoInteractions(kafka);
     }
 
     @Test
-    void findMineReturnsOnlyThePagedBookingsOfTheGivenUser() {
-        var pageable = org.springframework.data.domain.PageRequest.of(0, 10);
-        var page = new org.springframework.data.domain.PageImpl<>(java.util.List.of(new Booking(1L, 10L)), pageable, 1);
-        when(bookings.findByUserId(10L, pageable)).thenReturn(page);
+    void aCancelledBookingCannotBeConfirmed() {
+        Booking booking = holdOf(5L, 1);
+        booking.cancel(NOW, "OTHER", false);
 
-        assertThat(service.findMine(10L, pageable)).isSameAs(page);
+        assertThatThrownBy(() -> service.confirm(5L, 10L)).isInstanceOf(BookingNotOnHoldException.class);
     }
 
-    private static Event event(int capacity) {
-        Event event = new Event("Jazz night", null, START, capacity, 1L);
+    @Test
+    void someoneElsesBookingLooksLikeAMissingOne() {
+        holdOf(5L, 1);
+
+        assertThatThrownBy(() -> service.confirm(5L, 99L)).isInstanceOf(BookingNotFoundException.class);
+    }
+
+    // ---------- helpers ----------
+
+    private Event event(int capacity) {
+        Event event = new Event("Jazz night", null, STARTS, capacity, 1L);
         ReflectionTestUtils.setField(event, "id", 1L);
+        when(events.findById(1L)).thenReturn(Optional.of(event));
+        when(bookings.saveAndFlush(any(Booking.class))).thenAnswer(invocation -> {
+            Booking saved = invocation.getArgument(0);
+            if (saved.getId() == null) {
+                ReflectionTestUtils.setField(saved, "id", 500L);
+            }
+            return saved;
+        });
         return event;
+    }
+
+    private Booking holdOf(long id, int seats) {
+        return holdOf(id, seats, NOW.plus(Duration.ofMinutes(9)));
+    }
+
+    /** A HOLD of user 10 on event 1 with the given id and expiry, registered in the mock repository. */
+    private Booking holdOf(long id, int seats, Instant expiresAt) {
+        Event event = new Event("Jazz night", null, STARTS, 10, 1L);
+        ReflectionTestUtils.setField(event, "id", 1L);
+        event.book(seats);
+        when(events.findById(1L)).thenReturn(Optional.of(event));
+        Booking booking = new Booking(1L, 10L, seats, NOW.minusSeconds(60), expiresAt);
+        ReflectionTestUtils.setField(booking, "id", id);
+        when(bookings.findById(id)).thenReturn(Optional.of(booking));
+        return booking;
     }
 }

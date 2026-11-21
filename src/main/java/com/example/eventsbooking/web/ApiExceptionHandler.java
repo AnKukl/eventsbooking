@@ -42,6 +42,37 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
         return handleExceptionInternal(ex, problem, headers, status, request);
     }
 
+    /**
+     * Raised instead of {@link MethodArgumentNotValidException} when a controller method also validates other
+     * parameters (a constrained header, say): then the body is validated through method validation too. The same
+     * field list is produced, so clients see one error format.
+     */
+    @Override
+    protected ResponseEntity<Object> handleHandlerMethodValidationException(
+            org.springframework.web.method.annotation.HandlerMethodValidationException ex, HttpHeaders headers,
+            HttpStatusCode status, WebRequest request) {
+        ProblemDetail problem = ex.getBody();
+        problem.setTitle("Validation failed");
+        problem.setDetail("Request validation failed");
+        List<FieldViolation> errors = new java.util.ArrayList<>();
+        ex.getParameterValidationResults().forEach(result -> {
+            if (result instanceof org.springframework.validation.method.ParameterErrors parameterErrors) {
+                parameterErrors.getFieldErrors()
+                        .forEach(error -> errors.add(new FieldViolation(error.getField(), error.getDefaultMessage())));
+            } else {
+                org.springframework.web.bind.annotation.RequestHeader header =
+                        result.getMethodParameter().getParameterAnnotation(
+                                org.springframework.web.bind.annotation.RequestHeader.class);
+                String name = header != null && !header.value().isEmpty() ? header.value()
+                        : String.valueOf(result.getMethodParameter().getParameterName());
+                result.getResolvableErrors()
+                        .forEach(error -> errors.add(new FieldViolation(name, error.getDefaultMessage())));
+            }
+        });
+        problem.setProperty("errors", errors);
+        return handleExceptionInternal(ex, problem, headers, status, request);
+    }
+
     @ExceptionHandler(EventNotFoundException.class)
     ProblemDetail handleEventNotFound(EventNotFoundException ex) {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
@@ -70,6 +101,13 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
         long seconds = Math.max(1, (ex.getRetryAfter().toMillis() + 999) / 1000);
         return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).header(HttpHeaders.RETRY_AFTER, Long.toString(seconds))
                 .contentType(org.springframework.http.MediaType.APPLICATION_PROBLEM_JSON).body(problem);
+    }
+
+    @ExceptionHandler(com.example.eventsbooking.booking.InvalidSeatCountException.class)
+    ProblemDetail handleInvalidSeatCount(com.example.eventsbooking.booking.InvalidSeatCountException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+        problem.setTitle("Invalid seat count");
+        return problem;
     }
 
     @ExceptionHandler(com.example.eventsbooking.user.InvalidVerificationTokenException.class)

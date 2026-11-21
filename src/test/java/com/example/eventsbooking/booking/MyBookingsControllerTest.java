@@ -46,7 +46,7 @@ class MyBookingsControllerTest {
     @Test
     @WithMockUser(username = "7", roles = "USER")
     void returnsOnlyTheBookingsOfTheAuthenticatedUser() throws Exception {
-        Booking booking = new Booking(5L, 7L);
+        Booking booking = new Booking(5L, 7L, 1, java.time.Instant.parse("2030-01-01T10:00:00Z"), java.time.Instant.parse("2030-01-01T10:10:00Z"));
         ReflectionTestUtils.setField(booking, "id", 100L);
         when(service.findMine(eq(7L), any(Pageable.class))).thenReturn(new PageImpl<>(List.of(booking)));
 

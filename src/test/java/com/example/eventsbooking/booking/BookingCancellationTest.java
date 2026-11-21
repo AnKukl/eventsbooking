@@ -1,9 +1,12 @@
 package com.example.eventsbooking.booking;
 
+import com.example.eventsbooking.common.ConflictException;
 import com.example.eventsbooking.event.Event;
-import com.example.eventsbooking.event.EventNotFoundException;
 import com.example.eventsbooking.event.EventRepository;
+import com.example.eventsbooking.event.SeatReleased;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.PlatformTransactionManager;
 
@@ -17,210 +20,188 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.AdditionalAnswers.returnsFirstArg;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-/** Time is controlled only through a fixed {@link Clock}: no sleeping, no real "now". */
+/** The 24-hour rule. Time comes only from a fixed {@link Clock}: no sleeping, no real "now". */
 class BookingCancellationTest {
 
     private static final Instant NOW = Instant.parse("2030-01-01T10:00:00Z");
-    private static final Clock CLOCK = Clock.fixed(NOW, ZoneOffset.UTC);
+    private static final Duration NOTICE = Duration.ofHours(24);
 
     private final EventRepository events = mock(EventRepository.class);
     private final BookingRepository bookings = mock(BookingRepository.class);
-    private final org.springframework.context.ApplicationEventPublisher eventPublisher =
-            mock(org.springframework.context.ApplicationEventPublisher.class);
+    private final ApplicationEventPublisher spring = mock(ApplicationEventPublisher.class);
+    private final PaymentGateway payments = mock(PaymentGateway.class);
+    private final BookingService service = new BookingService(events, bookings,
+            mock(PlatformTransactionManager.class), Clock.fixed(NOW, ZoneOffset.UTC),
+            new BookingProperties(NOTICE, 4, Duration.ofMinutes(10)), mock(BookingEventPublisher.class), spring,
+            payments, mock(IdempotencyKeys.class));
 
-    // ---------- 24-hour boundary ----------
+    // ---------- the boundary: 24 hours and more means a refund ----------
 
     @Test
-    void cancellationIsAllowedExactly24HoursBeforeStart() {
-        Booking booking = activeBooking(eventStartingAt(NOW.plus(Duration.ofHours(24))));
+    void exactly24HoursBeforeTheStartTheBookingIsRefundable() {
+        Booking booking = confirmedBookingOfAnEventStartingAt(NOW.plus(NOTICE));
 
-        Booking cancelled = service(Duration.ofHours(24)).cancel(1L, 100L, 10L);
+        Booking cancelled = service.cancel(100L, 10L, CancellationReason.CHANGED_PLANS);
+
+        assertThat(cancelled.getStatus()).isEqualTo(BookingStatus.REFUND_PENDING);
+        assertThat(cancelled.getCancellationReason()).isEqualTo("CHANGED_PLANS");
+        assertThat(cancelled.getCancelledAt()).isEqualTo(NOW);
+        verify(payments).refund(booking);
+    }
+
+    @Test
+    void oneNanosecondShortOf24HoursThereIsNoRefund() {
+        confirmedBookingOfAnEventStartingAt(NOW.plus(NOTICE).minusNanos(1));
+
+        Booking cancelled = service.cancel(100L, 10L, CancellationReason.CHANGED_PLANS);
 
         assertThat(cancelled.getStatus()).isEqualTo(BookingStatus.CANCELLED);
-        assertThat(booking.getStatus()).isEqualTo(BookingStatus.CANCELLED);
+        verifyNoInteractions(payments);
     }
 
     @Test
-    void cancellationIsRejected23Hours59MinutesBeforeStart() {
-        Event event = eventStartingAt(NOW.plus(Duration.ofHours(23).plusMinutes(59)));
-        Booking booking = activeBooking(event);
+    void at23Hours59MinutesBeforeTheStartThereIsNoRefundButTheCancellationWorks() {
+        Booking booking = confirmedBookingOfAnEventStartingAt(NOW.plus(Duration.ofHours(23).plusMinutes(59)));
 
-        assertThatThrownBy(() -> service(Duration.ofHours(24)).cancel(1L, 100L, 10L))
-                .isInstanceOf(CancellationTooLateException.class);
-
-        assertThat(booking.getStatus()).isEqualTo(BookingStatus.ACTIVE);
-        assertThat(event.getBookedCount()).isEqualTo(1);
-        verify(bookings, never()).saveAndFlush(any());
-    }
-
-    @Test
-    void cancellationIsRejectedOneNanosecondShortOf24Hours() {
-        activeBooking(eventStartingAt(NOW.plus(Duration.ofHours(24)).minusNanos(1)));
-
-        assertThatThrownBy(() -> service(Duration.ofHours(24)).cancel(1L, 100L, 10L))
-                .isInstanceOf(CancellationTooLateException.class);
-    }
-
-    @Test
-    void cancellationIsAllowed24Hours1MinuteBeforeStart() {
-        activeBooking(eventStartingAt(NOW.plus(Duration.ofHours(24).plusMinutes(1))));
-
-        assertThat(service(Duration.ofHours(24)).cancel(1L, 100L, 10L).getStatus())
-                .isEqualTo(BookingStatus.CANCELLED);
-    }
-
-    @Test
-    void cancellationIsRejectedAfterTheEventHasStarted() {
-        activeBooking(eventStartingAt(NOW.minus(Duration.ofHours(1))));
-
-        assertThatThrownBy(() -> service(Duration.ofHours(24)).cancel(1L, 100L, 10L))
-                .isInstanceOf(CancellationTooLateException.class);
-    }
-
-    @Test
-    void noticePeriodIsConfigurable() {
-        activeBooking(eventStartingAt(NOW.plus(Duration.ofHours(47).plusMinutes(59))));
-        assertThatThrownBy(() -> service(Duration.ofHours(48)).cancel(1L, 100L, 10L))
-                .isInstanceOf(CancellationTooLateException.class);
-
-        activeBooking(eventStartingAt(NOW.plus(Duration.ofHours(48))));
-        assertThat(service(Duration.ofHours(48)).cancel(1L, 100L, 10L).getStatus())
-                .isEqualTo(BookingStatus.CANCELLED);
-    }
-
-    // ---------- effect of cancellation ----------
-
-    @Test
-    void cancellationMarksBookingCancelledAndReturnsTheSeat() {
-        Event event = eventStartingAt(NOW.plus(Duration.ofDays(10)));
-        Booking booking = activeBooking(event);
-        assertThat(event.getBookedCount()).isEqualTo(1);
-
-        service(Duration.ofHours(24)).cancel(1L, 100L, 10L);
+        service.cancel(100L, 10L, CancellationReason.OTHER);
 
         assertThat(booking.getStatus()).isEqualTo(BookingStatus.CANCELLED);
-        assertThat(booking.getCancelledAt()).isEqualTo(NOW);
+        verifyNoInteractions(payments);
+    }
+
+    @Test
+    void at24Hours1MinuteBeforeTheStartTheBookingIsRefundable() {
+        confirmedBookingOfAnEventStartingAt(NOW.plus(NOTICE).plus(Duration.ofMinutes(1)));
+
+        assertThat(service.cancel(100L, 10L, CancellationReason.OTHER).getStatus())
+                .isEqualTo(BookingStatus.REFUND_PENDING);
+    }
+
+    // ---------- a hold has not been paid for: nothing to refund, whatever the time ----------
+
+    @Test
+    void cancellingAHoldNeverRefundsEvenFarBeforeTheStart() {
+        Booking hold = holdOfAnEventStartingAt(NOW.plus(Duration.ofDays(30)));
+
+        service.cancel(100L, 10L, CancellationReason.CHANGED_PLANS);
+
+        assertThat(hold.getStatus()).isEqualTo(BookingStatus.CANCELLED);
+        verifyNoInteractions(payments);
+    }
+
+    // ---------- the seats come back ----------
+
+    @Test
+    void allSeatsOfTheBookingAreReleasedAndTheWaitlistIsTold() {
+        Event event = eventStartingAt(NOW.plus(Duration.ofDays(5)), 10);
+        event.book(3);
+        bookingOf(event, BookingStatus.CONFIRMED, 3);
+
+        service.cancel(100L, 10L, CancellationReason.OTHER);
+
         assertThat(event.getBookedCount()).isZero();
-        verify(bookings).saveAndFlush(booking);
+        ArgumentCaptor<SeatReleased> released = ArgumentCaptor.forClass(SeatReleased.class);
+        verify(spring).publishEvent(released.capture());
+        assertThat(released.getValue().eventId()).isEqualTo(1L);
+        assertThat(released.getValue().seats()).isEqualTo(3);
     }
 
-    @Test
-    void cancellingAnAlreadyCancelledBookingIsRejectedAndSeatIsNotReturnedTwice() {
-        Event event = eventStartingAt(NOW.plus(Duration.ofDays(10)));
-        Booking booking = activeBooking(event);
-        booking.cancel(NOW.minusSeconds(60));
-        int bookedBefore = event.getBookedCount();
+    // ---------- refused cancellations change nothing ----------
 
-        assertThatThrownBy(() -> service(Duration.ofHours(24)).cancel(1L, 100L, 10L))
+    @Test
+    void cancellingTwiceIsAConflictAndReleasesNothingTwice() {
+        Event event = eventStartingAt(NOW.plus(Duration.ofDays(5)), 10);
+        event.book(1);
+        Booking booking = bookingOf(event, BookingStatus.CONFIRMED, 1);
+
+        service.cancel(100L, 10L, CancellationReason.OTHER);
+        assertThatThrownBy(() -> service.cancel(100L, 10L, CancellationReason.OTHER))
                 .isInstanceOf(BookingAlreadyCancelledException.class);
-        assertThat(event.getBookedCount()).isEqualTo(bookedBefore);
-    }
 
-    // ---------- lookup failures ----------
-
-    @Test
-    void cancellationOfUnknownBookingFails() {
-        eventStartingAt(NOW.plus(Duration.ofDays(10)));
-        when(bookings.findById(100L)).thenReturn(Optional.empty());
-
-        assertThatThrownBy(() -> service(Duration.ofHours(24)).cancel(1L, 100L, 10L))
-                .isInstanceOf(BookingNotFoundException.class);
+        assertThat(booking.getStatus()).isEqualTo(BookingStatus.REFUND_PENDING);
+        verify(spring, org.mockito.Mockito.times(1)).publishEvent(any(Object.class));
+        verify(payments, org.mockito.Mockito.times(1)).refund(booking);
     }
 
     @Test
-    void cancellationThroughAnotherEventFails() {
-        eventStartingAt(NOW.plus(Duration.ofDays(10)));
-        when(bookings.findById(100L)).thenReturn(Optional.of(new Booking(2L, 10L)));
+    void aBookingWhoseRefundIsPendingCannotBeCancelledAgain() {
+        Event event = eventStartingAt(NOW.plus(Duration.ofDays(5)), 10);
+        Booking booking = bookingOf(event, BookingStatus.CONFIRMED, 1);
+        booking.cancel(NOW, "OTHER", true);
 
-        assertThatThrownBy(() -> service(Duration.ofHours(24)).cancel(1L, 100L, 10L))
-                .isInstanceOf(BookingNotFoundException.class);
+        assertThatThrownBy(() -> service.cancel(100L, 10L, CancellationReason.OTHER))
+                .isInstanceOf(BookingAlreadyCancelledException.class);
     }
 
     @Test
-    void cancellationOfBookingOnUnknownEventFails() {
-        when(events.findById(99L)).thenReturn(Optional.empty());
+    void someoneElsesBookingLooksLikeAMissingOne() {
+        confirmedBookingOfAnEventStartingAt(NOW.plus(Duration.ofDays(5)));
 
-        assertThatThrownBy(() -> service(Duration.ofHours(24)).cancel(99L, 100L, 10L))
-                .isInstanceOf(EventNotFoundException.class);
-    }
-
-    @Test
-    void cancellationByAnotherUserLooksLikeAMissingBookingAndChangesNothing() {
-        Event event = eventStartingAt(NOW.plus(Duration.ofDays(10)));
-        Booking booking = activeBooking(event);
-        int seatsBefore = event.getBookedCount();
-
-        assertThatThrownBy(() -> service(Duration.ofHours(24)).cancel(1L, 100L, 999L))
+        assertThatThrownBy(() -> service.cancel(100L, 99L, CancellationReason.OTHER))
                 .isInstanceOf(BookingNotFoundException.class);
 
-        assertThat(booking.getStatus()).isEqualTo(BookingStatus.ACTIVE);
-        assertThat(event.getBookedCount()).isEqualTo(seatsBefore);
-        verify(bookings, never()).saveAndFlush(any());
-    }
-
-    // ---------- SeatReleased: the waitlist is told that a seat is free ----------
-
-    @Test
-    void cancellationPublishesOneSeatReleasedForTheEvent() {
-        activeBooking(eventStartingAt(NOW.plus(Duration.ofDays(3))));
-
-        service(Duration.ofHours(24)).cancel(1L, 100L, 10L);
-
-        var captor = org.mockito.ArgumentCaptor.forClass(com.example.eventsbooking.event.SeatReleased.class);
-        verify(eventPublisher).publishEvent(captor.capture());
-        assertThat(captor.getValue().eventId()).isEqualTo(1L);
-        assertThat(captor.getValue().seats()).isEqualTo(1);
-        assertThat(captor.getValue().releaseId()).isNotNull();
+        verifyNoInteractions(payments);
     }
 
     @Test
-    void everyCancellationGetsItsOwnReleaseId() {
-        activeBooking(eventStartingAt(NOW.plus(Duration.ofDays(3))));
-        service(Duration.ofHours(24)).cancel(1L, 100L, 10L);
-        activeBooking(eventStartingAt(NOW.plus(Duration.ofDays(3))));
-        service(Duration.ofHours(24)).cancel(1L, 100L, 10L);
+    void aStartedEventCannotBeCancelled() {
+        Booking booking = confirmedBookingOfAnEventStartingAt(NOW.minusSeconds(1));
 
-        var captor = org.mockito.ArgumentCaptor.forClass(com.example.eventsbooking.event.SeatReleased.class);
-        verify(eventPublisher, org.mockito.Mockito.times(2)).publishEvent(captor.capture());
-        assertThat(captor.getAllValues().get(0).releaseId()).isNotEqualTo(captor.getAllValues().get(1).releaseId());
+        assertThatThrownBy(() -> service.cancel(100L, 10L, CancellationReason.OTHER))
+                .isInstanceOf(ConflictException.class).hasMessageContaining("started");
+
+        assertThat(booking.getStatus()).isEqualTo(BookingStatus.CONFIRMED);
+        verify(spring, never()).publishEvent(any(Object.class));
     }
 
+    // ---------- the payment gateway may fail without undoing the cancellation ----------
+
     @Test
-    void rejectedCancellationPublishesNothing() {
-        activeBooking(eventStartingAt(NOW.plus(Duration.ofHours(1))));
+    void aFailingRefundCallKeepsTheCancellationAndLeavesTheRefundPending() {
+        Booking booking = confirmedBookingOfAnEventStartingAt(NOW.plus(Duration.ofDays(5)));
+        doThrow(new IllegalStateException("gateway down")).when(payments).refund(booking);
 
-        assertThatThrownBy(() -> service(Duration.ofHours(24)).cancel(1L, 100L, 10L))
-                .isInstanceOf(CancellationTooLateException.class);
+        Booking cancelled = service.cancel(100L, 10L, CancellationReason.OTHER);
 
-        verify(eventPublisher, never()).publishEvent(any(Object.class));
+        assertThat(cancelled.getStatus()).isEqualTo(BookingStatus.REFUND_PENDING);
     }
 
     // ---------- helpers ----------
 
-    private BookingService service(Duration notice) {
-        return new BookingService(events, bookings, mock(PlatformTransactionManager.class),
-                CLOCK, new BookingProperties(notice), mock(BookingEventPublisher.class), eventPublisher);
-    }
-
-    /** Creates an event (id 1) with one seat already booked and registers it in the mock repository. */
-    private Event eventStartingAt(Instant startsAt) {
-        Event event = new Event("Jazz night", null, startsAt, 5, 1L);
+    private Event eventStartingAt(Instant startsAt, int capacity) {
+        Event event = new Event("Jazz night", null, startsAt, capacity, 1L);
         ReflectionTestUtils.setField(event, "id", 1L);
-        event.book();
         when(events.findById(1L)).thenReturn(Optional.of(event));
         return event;
     }
 
-    private Booking activeBooking(Event event) {
-        Booking booking = new Booking(event.getId(), 10L);
+    private Booking bookingOf(Event event, BookingStatus status, int seats) {
+        Booking booking = new Booking(1L, 10L, seats, NOW.minusSeconds(3600), NOW.plus(Duration.ofMinutes(5)));
         ReflectionTestUtils.setField(booking, "id", 100L);
+        if (status == BookingStatus.CONFIRMED) {
+            booking.confirm(NOW.minusSeconds(3000));
+        }
         when(bookings.findById(100L)).thenReturn(Optional.of(booking));
         when(bookings.saveAndFlush(any(Booking.class))).thenAnswer(returnsFirstArg());
         return booking;
+    }
+
+    private Booking confirmedBookingOfAnEventStartingAt(Instant startsAt) {
+        Event event = eventStartingAt(startsAt, 10);
+        event.book(1);
+        return bookingOf(event, BookingStatus.CONFIRMED, 1);
+    }
+
+    private Booking holdOfAnEventStartingAt(Instant startsAt) {
+        Event event = eventStartingAt(startsAt, 10);
+        event.book(1);
+        return bookingOf(event, BookingStatus.HOLD, 1);
     }
 }
