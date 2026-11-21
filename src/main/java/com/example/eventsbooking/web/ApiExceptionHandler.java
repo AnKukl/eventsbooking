@@ -63,6 +63,22 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
         return problem;
     }
 
+    @ExceptionHandler(com.example.eventsbooking.common.TooManyRequestsException.class)
+    ResponseEntity<ProblemDetail> handleTooManyRequests(com.example.eventsbooking.common.TooManyRequestsException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.TOO_MANY_REQUESTS, ex.getMessage());
+        problem.setTitle("Too many requests");
+        long seconds = Math.max(1, (ex.getRetryAfter().toMillis() + 999) / 1000);
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).header(HttpHeaders.RETRY_AFTER, Long.toString(seconds))
+                .contentType(org.springframework.http.MediaType.APPLICATION_PROBLEM_JSON).body(problem);
+    }
+
+    @ExceptionHandler(com.example.eventsbooking.user.InvalidVerificationTokenException.class)
+    ProblemDetail handleInvalidVerificationToken(com.example.eventsbooking.user.InvalidVerificationTokenException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+        problem.setTitle("Invalid confirmation token");
+        return problem;
+    }
+
     @ExceptionHandler(org.springframework.dao.OptimisticLockingFailureException.class)
     ProblemDetail handleOptimisticLock(org.springframework.dao.OptimisticLockingFailureException ex) {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT,

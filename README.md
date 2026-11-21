@@ -62,7 +62,11 @@ flowchart LR
 |---|---|---|---|
 | POST | `/api/auth/register` | открыт | регистрация; всегда `USER`, а с верным `inviteCode` (`ORGANIZER_INVITE_CODE`) — `ORGANIZER` |
 | POST | `/api/auth/login` | открыт | вход, возвращает JWT |
-| GET | `/api/me` | любой пользователь с токеном | текущий пользователь (id, email, роль) |
+| GET | `/api/me` | любой пользователь с токеном | текущий пользователь: id, email, роль, имя, телефон, язык, город, `emailVerified` |
+| PATCH | `/api/me` | любой пользователь с токеном | изменить `name`, `phone` (`+48123456789`), `language` (`RU`/`PL`/`EN`), `city`; не переданное не меняется, пустая строка очищает; email здесь не меняется |
+| POST | `/api/me/email-change` | любой пользователь с токеном | сменить email: `{"newEmail": "..."}`, `202`; адрес меняется после подтверждения; не чаще раза в минуту (`429` + `Retry-After`) |
+| POST | `/api/auth/confirm-email` | открыт | подтвердить смену email: `{"token": "..."}`, `204`; токен живёт 24 часа и одноразовый, иначе `400` |
+| GET, PUT | `/api/me/notifications/preferences` | любой пользователь с токеном | каналы (`email`, `push`) для каждого типа уведомлений; по умолчанию всё включено |
 | GET | `/api/events?page=0&size=10` | открыт (гость и пользователь) | список мероприятий с пагинацией; поля `seatStatus` (`AVAILABLE`/`SOLD_OUT`) и `isFavorite` (для гостя `false`) |
 | GET | `/api/events/{id}` | открыт (гость и пользователь) | одно мероприятие, те же поля |
 | GET | `/api/events/{id}/preview` | открыт (гость и пользователь) | данные предпросмотра: `shortDescription`, `audienceFit`, `audienceNotFit`, `media`; `Cache-Control: max-age=300`, `ETag`, `304` по `If-None-Match` |

@@ -45,7 +45,8 @@ class FlywayMigrationTest {
                 String.class);
 
         assertThat(columns).containsExactlyInAnyOrder(
-                "id", "email", "password_hash", "role", "created_at");
+                "id", "email", "password_hash", "role", "created_at",
+                "name", "phone", "language", "city", "email_verified");
     }
 
     @Test

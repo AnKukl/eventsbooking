@@ -35,6 +35,9 @@ class MeControllerTest {
     @MockitoBean
     private AuthService service;
 
+    @MockitoBean
+    private ProfileService profileService;
+
     MeControllerTest(MockMvc mockMvc) {
         this.mockMvc = mockMvc;
     }
