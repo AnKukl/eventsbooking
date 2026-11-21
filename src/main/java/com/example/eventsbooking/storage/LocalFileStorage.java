@@ -19,6 +19,10 @@ public class LocalFileStorage implements FileStorage {
     public static final Pattern STORED_NAME =
             Pattern.compile("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\\.(jpg|png|webp)");
 
+    /** A file that is still being uploaded: the same UUID shape with the extension {@code .tmp}. */
+    public static final Pattern TEMPORARY_NAME =
+            Pattern.compile("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\\.tmp");
+
     private final Path root;
 
     public LocalFileStorage(Path root) {
@@ -26,8 +30,13 @@ public class LocalFileStorage implements FileStorage {
     }
 
     @Override
-    public String save(byte[] content, ImageType type) {
-        String name = UUID.randomUUID() + "." + type.extension();
+    public String newKey(ImageType type) {
+        return UUID.randomUUID() + "." + type.extension();
+    }
+
+    @Override
+    public String saveTemporary(byte[] content) {
+        String name = UUID.randomUUID() + ".tmp";
         try {
             Files.createDirectories(root);
             Files.write(root.resolve(name), content);
@@ -35,6 +44,18 @@ public class LocalFileStorage implements FileStorage {
             throw new UncheckedIOException("Could not store the uploaded file", e);
         }
         return name;
+    }
+
+    @Override
+    public void move(String temporaryKey, String finalKey) {
+        if (!TEMPORARY_NAME.matcher(temporaryKey).matches() || !isStoredName(finalKey)) {
+            throw new IllegalArgumentException("Not a storage name: " + temporaryKey + " -> " + finalKey);
+        }
+        try {
+            Files.move(root.resolve(temporaryKey), root.resolve(finalKey), java.nio.file.StandardCopyOption.ATOMIC_MOVE);
+        } catch (IOException e) {
+            throw new UncheckedIOException("Could not store the uploaded file", e);
+        }
     }
 
     @Override
@@ -52,7 +73,7 @@ public class LocalFileStorage implements FileStorage {
 
     @Override
     public void delete(String name) {
-        if (!isStoredName(name)) {
+        if (!isStoredName(name) && !(name != null && TEMPORARY_NAME.matcher(name).matches())) {
             return;
         }
         try {

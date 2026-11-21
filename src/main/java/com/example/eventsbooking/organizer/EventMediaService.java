@@ -6,7 +6,7 @@ import com.example.eventsbooking.event.EventMedia;
 import com.example.eventsbooking.event.EventNotFoundException;
 import com.example.eventsbooking.event.EventRepository;
 import com.example.eventsbooking.event.MediaResponse;
-import com.example.eventsbooking.storage.FileStorage;
+import com.example.eventsbooking.storage.EventImageService;
 import com.example.eventsbooking.storage.ImageType;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -28,11 +28,11 @@ public class EventMediaService {
     static final int MAX_BYTES = 8 * 1024 * 1024;
 
     private final EventRepository events;
-    private final FileStorage storage;
+    private final EventImageService images;
 
-    public EventMediaService(EventRepository events, FileStorage storage) {
+    public EventMediaService(EventRepository events, EventImageService images) {
         this.events = events;
-        this.storage = storage;
+        this.images = images;
     }
 
     /** Appends the images to the event (the first one ever uploaded is the cover) and returns their public URLs. */
@@ -58,10 +58,11 @@ public class EventMediaService {
         List<String> stored = new ArrayList<>();
         try {
             for (int i = 0; i < files.size(); i++) {
-                stored.add(storage.save(files.get(i).content(), types.get(i)));
+                stored.add(images.store(files.get(i).content(), types.get(i)));
             }
+            images.attach(eventId, stored);
         } catch (RuntimeException e) {
-            stored.forEach(storage::delete);   // do not leave half an upload behind
+            stored.forEach(images::discard);   // do not leave half an upload behind
             throw e;
         }
 

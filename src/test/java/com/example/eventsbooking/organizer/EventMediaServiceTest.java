@@ -34,10 +34,20 @@ class EventMediaServiceTest {
         final Map<String, byte[]> files = new LinkedHashMap<>();
 
         @Override
-        public String save(byte[] content, ImageType type) {
-            String name = UUID.randomUUID() + "." + type.extension();
+        public String newKey(ImageType type) {
+            return UUID.randomUUID() + "." + type.extension();
+        }
+
+        @Override
+        public String saveTemporary(byte[] content) {
+            String name = UUID.randomUUID() + ".tmp";
             files.put(name, content);
             return name;
+        }
+
+        @Override
+        public void move(String temporaryKey, String finalKey) {
+            files.put(finalKey, files.remove(temporaryKey));
         }
 
         @Override
@@ -53,7 +63,10 @@ class EventMediaServiceTest {
 
     private final EventRepository events = mock(EventRepository.class);
     private final InMemoryStorage storage = new InMemoryStorage();
-    private final EventMediaService service = new EventMediaService(events, storage);
+    private final EventMediaService service = new EventMediaService(events,
+            new com.example.eventsbooking.storage.EventImageService(storage,
+                    mock(com.example.eventsbooking.storage.EventImageRepository.class),
+                    java.time.Clock.fixed(Instant.parse("2030-01-01T10:00:00Z"), java.time.ZoneOffset.UTC)));
     private final Event event = event(7L);
 
     // ---------- the real type decides ----------

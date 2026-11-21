@@ -8,12 +8,31 @@ import java.util.Optional;
  */
 public interface FileStorage {
 
-    /** Stores the content and returns the generated name (a random UUID plus the extension of {@code type}). */
-    String save(byte[] content, ImageType type);
+    /** A new final name (a random UUID plus the extension of {@code type}); nothing is written yet. */
+    String newKey(ImageType type);
+
+    /** Writes the content under a temporary name and returns it. A file with such a name is never served. */
+    String saveTemporary(byte[] content);
+
+    /** Gives a temporary file its final name (atomically where the storage can). */
+    void move(String temporaryKey, String finalKey);
+
+    /** Stores the content under a new final name and returns it. */
+    default String save(byte[] content, ImageType type) {
+        String temporary = saveTemporary(content);
+        String key = newKey(type);
+        try {
+            move(temporary, key);
+        } catch (RuntimeException e) {
+            delete(temporary);
+            throw e;
+        }
+        return key;
+    }
 
     /** The content of a file this storage produced, or empty if there is none (or the name is not one of ours). */
     Optional<byte[]> read(String name);
 
-    /** Removes the file; a missing or foreign name is ignored. */
+    /** Removes the file (temporary or final); a missing or foreign name is ignored. */
     void delete(String name);
 }
