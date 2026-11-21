@@ -1,7 +1,11 @@
 package com.example.eventsbooking.event;
 
+import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OrderColumn;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -11,6 +15,8 @@ import jakarta.persistence.Version;
 import com.example.eventsbooking.common.ConflictException;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "events")
@@ -25,6 +31,27 @@ public class Event {
 
     @Column(length = 2000)
     private String description;
+
+    @Column(nullable = false, length = 160)
+    private String shortDescription = "";
+
+    // Preview lists. Lazy and never touched by the list endpoints; read inside a transaction only (preview).
+    @ElementCollection
+    @CollectionTable(name = "event_audience_fit", joinColumns = @JoinColumn(name = "event_id"))
+    @OrderColumn(name = "position")
+    @Column(name = "label", nullable = false, length = 100)
+    private List<String> audienceFit = new ArrayList<>();
+
+    @ElementCollection
+    @CollectionTable(name = "event_audience_not_fit", joinColumns = @JoinColumn(name = "event_id"))
+    @OrderColumn(name = "position")
+    @Column(name = "label", nullable = false, length = 100)
+    private List<String> audienceNotFit = new ArrayList<>();
+
+    @ElementCollection
+    @CollectionTable(name = "event_media", joinColumns = @JoinColumn(name = "event_id"))
+    @OrderColumn(name = "position")
+    private List<EventMedia> media = new ArrayList<>();
 
     @Column(nullable = false)
     private Instant startsAt;
@@ -82,6 +109,27 @@ public class Event {
         this.organizerId = organizerId;
     }
 
+    /**
+     * Sets the preview fields. {@code null} keeps the current value; an empty list or string clears it. Limits are
+     * validated at the API boundary and backed by database constraints.
+     */
+    public void applyPreview(String shortDescription, List<String> audienceFit, List<String> audienceNotFit,
+            List<EventMedia> media) {
+        if (shortDescription != null) {
+            this.shortDescription = shortDescription;
+        }
+        replace(this.audienceFit, audienceFit);
+        replace(this.audienceNotFit, audienceNotFit);
+        replace(this.media, media);
+    }
+
+    private static <T> void replace(List<T> current, List<T> replacement) {
+        if (replacement != null) {
+            current.clear();
+            current.addAll(replacement);
+        }
+    }
+
     /** Seats left or not; derived from the counters, never stored. */
     public SeatStatus seatStatus() {
         return bookedCount >= capacity ? SeatStatus.SOLD_OUT : SeatStatus.AVAILABLE;
@@ -97,6 +145,22 @@ public class Event {
 
     public String getDescription() {
         return description;
+    }
+
+    public String getShortDescription() {
+        return shortDescription;
+    }
+
+    public List<String> getAudienceFit() {
+        return List.copyOf(audienceFit);
+    }
+
+    public List<String> getAudienceNotFit() {
+        return List.copyOf(audienceNotFit);
+    }
+
+    public List<EventMedia> getMedia() {
+        return List.copyOf(media);
     }
 
     public Instant getStartsAt() {

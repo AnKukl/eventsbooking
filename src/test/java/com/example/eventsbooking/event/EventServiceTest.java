@@ -152,4 +152,88 @@ class EventServiceTest {
 
         verify(repository, never()).delete(any());
     }
+
+    // ---------- preview fields ----------
+
+    private static EventRequest withPreview(String shortDescription, List<String> fit, List<String> notFit,
+            List<MediaRequest> media) {
+        return new EventRequest("Jazz night", "Live music", IN_A_WEEK, 50, shortDescription, fit, notFit, media);
+    }
+
+    @Test
+    void createStoresThePreviewFields() {
+        when(repository.save(any(Event.class))).thenAnswer(returnsFirstArg());
+
+        Event created = service.create(withPreview("Pitch", List.of("a", "b"), List.of("c"),
+                List.of(new MediaRequest("https://img/1.png", "Cover"))), 7L);
+
+        assertThat(created.getShortDescription()).isEqualTo("Pitch");
+        assertThat(created.getAudienceFit()).containsExactly("a", "b");
+        assertThat(created.getAudienceNotFit()).containsExactly("c");
+        assertThat(created.getMedia()).containsExactly(new EventMedia("https://img/1.png", "Cover"));
+    }
+
+    @Test
+    void createWithoutPreviewFieldsLeavesThemEmpty() {
+        when(repository.save(any(Event.class))).thenAnswer(returnsFirstArg());
+
+        Event created = service.create(new EventRequest("Jazz night", null, IN_A_WEEK, 50), 7L);
+
+        assertThat(created.getShortDescription()).isEmpty();
+        assertThat(created.getAudienceFit()).isEmpty();
+        assertThat(created.getMedia()).isEmpty();
+    }
+
+    @Test
+    void updateReplacesThePreviewFieldsItIsGiven() {
+        Event existing = new Event("Old", "old", IN_A_WEEK, 10, 1L);
+        existing.applyPreview("Old pitch", List.of("a", "b", "c"), List.of("x"), List.of());
+        when(repository.findById(1L)).thenReturn(Optional.of(existing));
+
+        service.update(1L, withPreview("New pitch", List.of("z"), List.of(), null), 1L);
+
+        assertThat(existing.getShortDescription()).isEqualTo("New pitch");
+        assertThat(existing.getAudienceFit()).containsExactly("z");
+        assertThat(existing.getAudienceNotFit()).isEmpty();
+    }
+
+    @Test
+    void updateWithoutPreviewFieldsKeepsTheExistingOnes() {
+        Event existing = new Event("Old", "old", IN_A_WEEK, 10, 1L);
+        existing.applyPreview("Pitch", List.of("a"), List.of("x"), List.of(new EventMedia("https://img/1.png", null)));
+        when(repository.findById(1L)).thenReturn(Optional.of(existing));
+
+        service.update(1L, new EventRequest("Renamed", "old", IN_A_WEEK, 10), 1L);
+
+        assertThat(existing.getTitle()).isEqualTo("Renamed");
+        assertThat(existing.getShortDescription()).isEqualTo("Pitch");
+        assertThat(existing.getAudienceFit()).containsExactly("a");
+        assertThat(existing.getAudienceNotFit()).containsExactly("x");
+        assertThat(existing.getMedia()).hasSize(1);
+    }
+
+    @Test
+    void previewIsBuiltFromTheEvent() {
+        Event existing = new Event("Old", "old", IN_A_WEEK, 10, 1L);
+        existing.applyPreview("Pitch", List.of("a"), List.of("x"),
+                List.of(new EventMedia("https://img/1.png", "Cover"), new EventMedia("https://img/2.png", null)));
+        org.springframework.test.util.ReflectionTestUtils.setField(existing, "id", 1L);
+        when(repository.findById(1L)).thenReturn(Optional.of(existing));
+
+        EventPreviewResponse preview = service.preview(1L);
+
+        assertThat(preview.id()).isEqualTo(1L);
+        assertThat(preview.shortDescription()).isEqualTo("Pitch");
+        assertThat(preview.audienceFit()).containsExactly("a");
+        assertThat(preview.audienceNotFit()).containsExactly("x");
+        assertThat(preview.media()).containsExactly(new MediaResponse("https://img/1.png", "Cover"),
+                new MediaResponse("https://img/2.png", null));
+    }
+
+    @Test
+    void previewOfAnUnknownEventThrowsNotFound() {
+        when(repository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.preview(99L)).isInstanceOf(EventNotFoundException.class);
+    }
 }

@@ -65,8 +65,9 @@ flowchart LR
 | GET | `/api/me` | любой пользователь с токеном | текущий пользователь (id, email, роль) |
 | GET | `/api/events?page=0&size=10` | открыт (гость и пользователь) | список мероприятий с пагинацией; поля `seatStatus` (`AVAILABLE`/`SOLD_OUT`) и `isFavorite` (для гостя `false`) |
 | GET | `/api/events/{id}` | открыт (гость и пользователь) | одно мероприятие, те же поля |
-| POST | `/api/events` | `ORGANIZER` | создать мероприятие (организатор = текущий пользователь) |
-| PUT | `/api/events/{id}` | `ORGANIZER`, только автор | изменить мероприятие |
+| GET | `/api/events/{id}/preview` | открыт (гость и пользователь) | данные предпросмотра: `shortDescription`, `audienceFit`, `audienceNotFit`, `media`; `Cache-Control: max-age=300`, `ETag`, `304` по `If-None-Match` |
+| POST | `/api/events` | `ORGANIZER` | создать мероприятие (организатор = текущий пользователь); необязательные поля предпросмотра: `shortDescription` (≤160), `audienceFit` (≤4 строк по ≤100), `audienceNotFit` (≤3), `media` (≤6 картинок `{url, alt}`, первая — обложка, только `http(s)`) |
+| PUT | `/api/events/{id}` | `ORGANIZER`, только автор | изменить мероприятие; поля предпросмотра, которых нет в теле, не меняются, пустой список очищает |
 | DELETE | `/api/events/{id}` | `ORGANIZER`, только автор | удалить мероприятие |
 | POST | `/api/events/{eventId}/bookings` | любой пользователь с токеном | забронировать место для текущего пользователя, тело не нужно (`409`: мест нет, бронь уже есть, событие началось) |
 | POST | `/api/events/{eventId}/bookings/{bookingId}/cancel` | любой пользователь с токеном | отменить свою бронь не позже чем за 24 часа до начала (чужая даёт `404`) |

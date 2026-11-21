@@ -19,8 +19,21 @@ public class EventService {
     /** The organizer is the authenticated user: it is never taken from the request body. */
     @Transactional
     public Event create(EventRequest request, long organizerId) {
-        return repository.save(new Event(request.title(), request.description(), request.startsAt(),
-                request.capacity(), organizerId));
+        Event event = new Event(request.title(), request.description(), request.startsAt(),
+                request.capacity(), organizerId);
+        applyPreview(event, request);
+        return repository.save(event);
+    }
+
+    /** The preview fields only; built inside the transaction because the lists are lazy. */
+    public EventPreviewResponse preview(long id) {
+        return EventPreviewResponse.from(get(id));
+    }
+
+    private static void applyPreview(Event event, EventRequest request) {
+        event.applyPreview(request.shortDescription(), request.audienceFit(), request.audienceNotFit(),
+                request.media() == null ? null
+                        : request.media().stream().map(m -> new EventMedia(m.url(), m.alt())).toList());
     }
 
     public Event get(long id) {
@@ -37,6 +50,7 @@ public class EventService {
         Event event = ownedBy(id, requesterId);
         event.update(request.title(), request.description(), request.startsAt(), request.capacity(),
                 event.getOrganizerId());
+        applyPreview(event, request);
         return event;
     }
 

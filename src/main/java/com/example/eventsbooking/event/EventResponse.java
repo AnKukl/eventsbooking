@@ -8,6 +8,7 @@ public record EventResponse(
         Long id,
         String title,
         String description,
+        String shortDescription,
         Instant startsAt,
         int capacity,
         int bookedCount,
@@ -17,7 +18,7 @@ public record EventResponse(
 
     public static EventResponse from(Event event, boolean favorite) {
         return new EventResponse(event.getId(), event.getTitle(), event.getDescription(),
-                event.getStartsAt(), event.getCapacity(), event.getBookedCount(), event.getOrganizerId(),
+                event.getShortDescription(), event.getStartsAt(), event.getCapacity(), event.getBookedCount(), event.getOrganizerId(),
                 event.seatStatus(), favorite);
     }
 }

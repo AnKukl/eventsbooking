@@ -8,6 +8,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.data.web.PagedModel;
+import org.springframework.http.CacheControl;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -22,6 +23,7 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import java.net.URI;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 @RestController
 @RequestMapping("/api/events")
@@ -48,6 +50,19 @@ class EventController {
         Event event = service.get(id);
         boolean favorite = favorites.favoriteEventIds(CurrentUser.idOrNull(principal), List.of(id)).contains(id);
         return EventResponse.from(event, favorite);
+    }
+
+    /**
+     * Preview card data. Identical for every viewer, so it is cacheable by anyone for five minutes; the content ETag
+     * lets a client revalidate cheaply (304). Spring answers a matching If-None-Match with 304 and keeps the headers.
+     */
+    @GetMapping("/{id}/preview")
+    ResponseEntity<EventPreviewResponse> preview(@PathVariable long id) {
+        EventPreviewResponse preview = service.preview(id);
+        return ResponseEntity.ok()
+                .cacheControl(CacheControl.maxAge(5, TimeUnit.MINUTES).cachePublic())
+                .eTag(preview.etag())
+                .body(preview);
     }
 
     /** Only public, indexed columns may be used for sorting; internal fields (version, organizerId, ...) may not. */
