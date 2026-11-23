@@ -22,11 +22,13 @@ public class AuthService {
     private final JwtService jwtService;
     private final Clock clock;
     private final RegistrationProperties registration;
+    private final RefreshTokenService refreshTokens;
     /** Checked against when the email is unknown, so that response time does not reveal which emails exist. */
     private final String dummyHash;
 
     public AuthService(UserRepository users, PasswordEncoder passwordEncoder, JwtService jwtService, Clock clock,
-            RegistrationProperties registration) {
+            RegistrationProperties registration, RefreshTokenService refreshTokens) {
+        this.refreshTokens = refreshTokens;
         this.users = users;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
@@ -52,14 +54,45 @@ public class AuthService {
         }
     }
 
+    /** An access token and a refresh token: what a login or a refresh hands to the browser. Both are credentials. */
+    public record Session(IssuedToken access, String refresh) {
+        @Override
+        public String toString() {
+            return "Session[" + access + "]";
+        }
+    }
+
+    @Transactional
+    public Session startSession(LoginRequest request) {
+        User user = authenticate(request);
+        return new Session(jwtService.issue(user), refreshTokens.issue(user.getId()).value());
+    }
+
+    /** Rotates the refresh token and issues a fresh access token with the user's current role. */
+    @Transactional(noRollbackFor = RefreshTokenRejectedException.class)
+    public Session refresh(String refreshToken) {
+        RefreshTokenService.Issued next = refreshTokens.rotate(refreshToken);
+        User user = users.findById(next.userId())
+                .orElseThrow(() -> new RefreshTokenRejectedException("Unknown user"));
+        return new Session(jwtService.issue(user), next.value());
+    }
+
+    public void logout(String refreshToken) {
+        refreshTokens.revoke(refreshToken);
+    }
+
     public IssuedToken login(LoginRequest request) {
+        return jwtService.issue(authenticate(request));
+    }
+
+    private User authenticate(LoginRequest request) {
         User user = users.findByEmail(normalize(request.email())).orElse(null);
         String hash = user == null ? dummyHash : user.getPasswordHash();
         boolean passwordMatches = passwordEncoder.matches(request.password(), hash);
         if (user == null || !passwordMatches) {
             throw new BadCredentialsException("Invalid email or password");
         }
-        return jwtService.issue(user);
+        return user;
     }
 
     /** The authenticated user's account; a token for a deleted user is no longer valid. */

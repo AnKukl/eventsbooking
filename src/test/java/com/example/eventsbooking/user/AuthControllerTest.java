@@ -33,6 +33,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(AuthController.class)
 @Import(SecurityConfig.class)
+@org.springframework.boot.context.properties.EnableConfigurationProperties(RefreshProperties.class)
 @TestConstructor(autowireMode = TestConstructor.AutowireMode.ALL)
 class AuthControllerTest {
 
@@ -131,16 +132,22 @@ class AuthControllerTest {
 
     @Test
     void loginPutsTheTokenIntoAnHttpOnlyCookieAndNotIntoTheBody() throws Exception {
-        when(service.login(any(LoginRequest.class))).thenReturn(new IssuedToken("jwt-value", 900));
+        when(service.startSession(any(LoginRequest.class)))
+                .thenReturn(new AuthService.Session(new IssuedToken("jwt-value", 900), "refresh-value"));
 
         login("{\"email\":\"alice@example.com\",\"password\":\"s3cret-password\"}")
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.expiresIn").value(900))
                 .andExpect(jsonPath("$.accessToken").doesNotExist())
                 .andExpect(content().string(not(containsString("jwt-value"))))
-                .andExpect(header().string(HttpHeaders.SET_COOKIE, allOf(startsWith("access_token=jwt-value;"),
-                        containsString("HttpOnly"), containsString("SameSite=Lax"), containsString("Path=/;"),
-                        containsString("Max-Age=900"), containsString("Secure"))));
+                .andExpect(content().string(not(containsString("refresh-value"))))
+                .andExpect(header().stringValues(HttpHeaders.SET_COOKIE, hasItems(
+                        allOf(startsWith("access_token=jwt-value;"), containsString("HttpOnly"),
+                                containsString("SameSite=Lax"), containsString("Path=/;"),
+                                containsString("Max-Age=900"), containsString("Secure")),
+                        allOf(startsWith("refresh_token=refresh-value;"), containsString("HttpOnly"),
+                                containsString("SameSite=Strict"), containsString("Path=/api/auth"),
+                                containsString("Max-Age=1209600"), containsString("Secure")))));
     }
 
     @Test
@@ -155,7 +162,7 @@ class AuthControllerTest {
 
     @Test
     void loginWithWrongCredentialsReturns401ProblemDetail() throws Exception {
-        when(service.login(any(LoginRequest.class))).thenThrow(new BadCredentialsException("x"));
+        when(service.startSession(any(LoginRequest.class))).thenThrow(new BadCredentialsException("x"));
 
         login("{\"email\":\"alice@example.com\",\"password\":\"wrong-password\"}")
                 .andExpect(status().isUnauthorized())

@@ -14,7 +14,7 @@ import java.time.Duration;
 public record JwtProperties(
         String secret,
         @DefaultValue("eventsbooking") String issuer,
-        @DefaultValue("1h") Duration ttl) {
+        @DefaultValue("PT15M") Duration ttl) {
 
     /** The secret must never end up in logs, so it is left out of the string form. */
     @Override

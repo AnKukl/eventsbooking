@@ -38,7 +38,7 @@ class AuthServiceTest {
         users = mock(UserRepository.class);
         jwt = mock(JwtService.class);
         service = new AuthService(users, encoder, jwt, Clock.fixed(NOW, ZoneOffset.UTC),
-                new RegistrationProperties("invite-secret"));
+                new RegistrationProperties("invite-secret"), mock(RefreshTokenService.class));
         when(users.saveAndFlush(any(User.class))).thenAnswer(returnsFirstArg());
     }
 
@@ -112,7 +112,7 @@ class AuthServiceTest {
     void inviteCodeIsRejectedWhenNoCodeIsConfiguredSoOrganizersCannotRegisterAtAll() {
         for (String configured : new String[] {null, "", "  "}) {
             AuthService closed = new AuthService(users, encoder, jwt, Clock.fixed(NOW, ZoneOffset.UTC),
-                    new RegistrationProperties(configured));
+                    new RegistrationProperties(configured), mock(RefreshTokenService.class));
 
             assertThatThrownBy(() -> closed.register(
                     new RegisterRequest("org@example.com", "s3cret-password", "anything")))
