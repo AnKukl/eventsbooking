@@ -24,6 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -223,10 +224,10 @@ class SecurityIntegrationTest {
     }
 
     private String login(String email) throws Exception {
-        String body = mockMvc.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON)
+        var body = mockMvc.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON)
                         .content(credentials(email, PASSWORD)))
-                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
-        return body.replaceAll(".*\"accessToken\":\"([^\"]+)\".*", "$1");
+                .andExpect(status().isOk()).andReturn().getResponse();
+        return accessCookie(body);
     }
 
     @Test
@@ -250,16 +251,79 @@ class SecurityIntegrationTest {
                 .doesNotContain("bad-password-123");
     }
 
+    // ---------- cookie session and CSRF by Origin ----------
+
+    private static final String FRONTEND = "http://localhost:5173";
+
+    @Test
+    void theCookieAloneAuthenticatesARequest() throws Exception {
+        String token = registerAndLogin("cookie-only@example.com", "USER");
+
+        mockMvc.perform(get("/api/me").cookie(new jakarta.servlet.http.Cookie("access_token", token)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.email").value("cookie-only@example.com"));
+    }
+
+    @Test
+    void aMutationWithTheCookieFromAForeignOriginOrWithoutOriginIsRejected() throws Exception {
+        String token = registerAndLogin("csrf-foreign@example.com", "USER");
+        jakarta.servlet.http.Cookie cookie = new jakarta.servlet.http.Cookie("access_token", token);
+
+        mockMvc.perform(post("/api/auth/logout").cookie(cookie).header(HttpHeaders.ORIGIN, "https://evil.example"))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(post("/api/auth/logout").cookie(cookie))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.status").value(403));
+    }
+
+    @Test
+    void aMutationWithTheCookieFromTheFrontendOrTheApiItselfIsAllowed() throws Exception {
+        String token = registerAndLogin("csrf-allowed@example.com", "USER");
+        jakarta.servlet.http.Cookie cookie = new jakarta.servlet.http.Cookie("access_token", token);
+
+        mockMvc.perform(post("/api/auth/logout").cookie(cookie).header(HttpHeaders.ORIGIN, FRONTEND))
+                .andExpect(status().isNoContent());
+        // Swagger UI served by the API: same origin as the request
+        mockMvc.perform(post("/api/auth/logout").cookie(cookie).header(HttpHeaders.ORIGIN, "http://localhost"))
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void aBearerHeaderWithoutCookiesNeedsNoOrigin() throws Exception {
+        String token = registerAndLogin("csrf-bearer@example.com", "USER");
+
+        mockMvc.perform(patch("/api/me").header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"name\":\"Script\"}"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void anExpiredOrBrokenCookieDoesNotBlockLoggingInAgain() throws Exception {
+        register("relogin@example.com", "USER");
+
+        mockMvc.perform(post("/api/auth/login").cookie(new jakarta.servlet.http.Cookie("access_token", "garbage"))
+                        .header(HttpHeaders.ORIGIN, FRONTEND)
+                        .contentType(MediaType.APPLICATION_JSON).content(credentials("relogin@example.com", PASSWORD)))
+                .andExpect(status().isOk());
+    }
+
     // ---------- helpers ----------
 
     private String registerAndLogin(String email, String role) throws Exception {
         register(email, role);
-        String body = mockMvc.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON)
+        var response = mockMvc.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON)
                         .content(credentials(email, PASSWORD)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.tokenType").value("Bearer"))
-                .andReturn().getResponse().getContentAsString();
-        return JsonPath.read(body, "$.accessToken");
+                .andExpect(jsonPath("$.expiresIn").isNumber())
+                .andReturn().getResponse();
+        return accessCookie(response);
+    }
+
+    private static String accessCookie(org.springframework.mock.web.MockHttpServletResponse response) {
+        jakarta.servlet.http.Cookie cookie = response.getCookie("access_token");
+        assertThat(cookie).as("access_token cookie").isNotNull();
+        assertThat(cookie.isHttpOnly()).isTrue();
+        return cookie.getValue();
     }
 
     private void register(String email, String role) throws Exception {

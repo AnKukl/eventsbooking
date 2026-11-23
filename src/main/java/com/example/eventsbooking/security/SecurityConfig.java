@@ -31,14 +31,19 @@ import org.springframework.web.servlet.HandlerExceptionResolver;
  */
 @Configuration(proxyBeanMethods = false)
 @EnableWebSecurity
+@org.springframework.boot.context.properties.EnableConfigurationProperties(CookieProperties.class)
 public class SecurityConfig {
 
     static final String ROLE_ORGANIZER = "ORGANIZER";
 
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http, ProblemDetailSecurityHandlers problemHandlers,
-            JwtAuthenticationConverter jwtAuthenticationConverter) throws Exception {
+            JwtAuthenticationConverter jwtAuthenticationConverter,
+            @Value("${app.cors.allowed-origins:}") List<String> allowedOrigins) throws Exception {
         http
+                // CSRF for the cookie session: state-changing requests with a session cookie must come from an allowed origin
+                .addFilterBefore(new OriginCheckFilter(java.util.Set.copyOf(clean(allowedOrigins)), problemHandlers),
+                        org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter.class)
                 // CORS is evaluated before authentication, so preflight requests need no token and 401/403 carry CORS headers
                 .cors(Customizer.withDefaults())
                 .csrf(AbstractHttpConfigurer::disable)
@@ -46,7 +51,8 @@ public class SecurityConfig {
                 .formLogin(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(requests -> requests
-                        .requestMatchers("/api/auth/register", "/api/auth/login", "/api/auth/confirm-email").permitAll()
+                        .requestMatchers("/api/auth/register", "/api/auth/login", "/api/auth/confirm-email",
+                                "/api/auth/logout", "/api/auth/refresh").permitAll()
                         .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
                         // API description for developers: public, contains no data
                         .requestMatchers("/v3/api-docs", "/v3/api-docs/**", "/swagger-ui.html", "/swagger-ui/**").permitAll()
@@ -63,6 +69,7 @@ public class SecurityConfig {
                         .authenticationEntryPoint(problemHandlers)
                         .accessDeniedHandler(problemHandlers))
                 .oauth2ResourceServer(oauth2 -> oauth2
+                        .bearerTokenResolver(new CookieBearerTokenResolver())
                         .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter))
                         .authenticationEntryPoint(problemHandlers)
                         .accessDeniedHandler(problemHandlers));
@@ -77,7 +84,7 @@ public class SecurityConfig {
     CorsConfigurationSource corsConfigurationSource(
             @Value("${app.cors.allowed-origins:}") List<String> allowedOrigins) {
         CorsConfiguration cors = new CorsConfiguration();
-        cors.setAllowedOrigins(allowedOrigins.stream().map(String::strip).filter(o -> !o.isEmpty()).toList());
+        cors.setAllowedOrigins(clean(allowedOrigins));
         cors.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         cors.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept"));
         cors.setAllowCredentials(false);
@@ -85,6 +92,15 @@ public class SecurityConfig {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", cors);
         return source;
+    }
+
+    private static List<String> clean(List<String> origins) {
+        return origins.stream().map(String::strip).filter(origin -> !origin.isEmpty()).toList();
+    }
+
+    @Bean
+    AuthCookies authCookies(CookieProperties properties) {
+        return new AuthCookies(properties);
     }
 
     /** Maps the {@code roles} claim (["ORGANIZER"]) to authorities ({@code ROLE_ORGANIZER}). */

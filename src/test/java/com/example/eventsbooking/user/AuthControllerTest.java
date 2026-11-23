@@ -5,6 +5,7 @@ import com.example.eventsbooking.security.SecurityConfig;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
@@ -16,13 +17,17 @@ import org.springframework.test.web.servlet.ResultActions;
 
 import java.time.Instant;
 
+import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.hasItems;
+import static org.hamcrest.Matchers.startsWith;
 import static org.hamcrest.Matchers.not;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -125,14 +130,27 @@ class AuthControllerTest {
     // ---------- login ----------
 
     @Test
-    void loginReturnsBearerToken() throws Exception {
-        when(service.login(any(LoginRequest.class))).thenReturn(new IssuedToken("jwt-value", 3600));
+    void loginPutsTheTokenIntoAnHttpOnlyCookieAndNotIntoTheBody() throws Exception {
+        when(service.login(any(LoginRequest.class))).thenReturn(new IssuedToken("jwt-value", 900));
 
         login("{\"email\":\"alice@example.com\",\"password\":\"s3cret-password\"}")
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.accessToken").value("jwt-value"))
-                .andExpect(jsonPath("$.tokenType").value("Bearer"))
-                .andExpect(jsonPath("$.expiresIn").value(3600));
+                .andExpect(jsonPath("$.expiresIn").value(900))
+                .andExpect(jsonPath("$.accessToken").doesNotExist())
+                .andExpect(content().string(not(containsString("jwt-value"))))
+                .andExpect(header().string(HttpHeaders.SET_COOKIE, allOf(startsWith("access_token=jwt-value;"),
+                        containsString("HttpOnly"), containsString("SameSite=Lax"), containsString("Path=/;"),
+                        containsString("Max-Age=900"), containsString("Secure"))));
+    }
+
+    @Test
+    void logoutAnswers204AndClearsBothCookies() throws Exception {
+        mockMvc.perform(post("/api/auth/logout"))
+                .andExpect(status().isNoContent())
+                .andExpect(header().stringValues(HttpHeaders.SET_COOKIE, hasItems(
+                        allOf(startsWith("access_token=;"), containsString("Max-Age=0"), containsString("Path=/;")),
+                        allOf(startsWith("refresh_token=;"), containsString("Max-Age=0"),
+                                containsString("Path=/api/auth")))));
     }
 
     @Test
