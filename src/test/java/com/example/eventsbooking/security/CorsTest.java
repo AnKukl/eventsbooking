@@ -58,10 +58,53 @@ class CorsTest {
     }
 
     @Test
-    void credentialsAreNotAllowedBecauseTheTokenTravelsInAHeaderNotACookie() throws Exception {
+    void aPatchPreflightWithTheHeadersTheFrontendSendsIsAllowed() throws Exception {
+        mockMvc.perform(options("/api/me")
+                        .header(HttpHeaders.ORIGIN, FRONTEND)
+                        .header(HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD, "PATCH")
+                        .header(HttpHeaders.ACCESS_CONTROL_REQUEST_HEADERS,
+                                "content-type,idempotency-key,if-match,if-none-match"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, FRONTEND))
+                .andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_METHODS,
+                        org.hamcrest.Matchers.containsString("PATCH")))
+                .andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_HEADERS, org.hamcrest.Matchers.allOf(
+                        org.hamcrest.Matchers.containsStringIgnoringCase("idempotency-key"),
+                        org.hamcrest.Matchers.containsStringIgnoringCase("if-match"),
+                        org.hamcrest.Matchers.containsStringIgnoringCase("if-none-match"))));
+    }
+
+    @Test
+    void aPatchPreflightFromAForeignOriginGetsNoAllowOrigin() throws Exception {
+        mockMvc.perform(options("/api/me")
+                        .header(HttpHeaders.ORIGIN, "https://evil.example")
+                        .header(HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD, "PATCH"))
+                .andExpect(header().doesNotExist(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN));
+    }
+
+    @Test
+    void credentialsAreAllowedForTheListedOriginsBecauseTheSessionIsACookie() throws Exception {
         mockMvc.perform(options("/api/events")
                         .header(HttpHeaders.ORIGIN, FRONTEND)
                         .header(HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD, "GET"))
-                .andExpect(header().doesNotExist(HttpHeaders.ACCESS_CONTROL_ALLOW_CREDENTIALS));
+                .andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_CREDENTIALS, "true"));
+    }
+
+    @Test
+    void etagLocationAndRetryAfterAreReadableByTheFrontend() throws Exception {
+        mockMvc.perform(get("/api/me").header(HttpHeaders.ORIGIN, FRONTEND))
+                .andExpect(header().string(HttpHeaders.ACCESS_CONTROL_EXPOSE_HEADERS, org.hamcrest.Matchers.allOf(
+                        org.hamcrest.Matchers.containsString("ETag"),
+                        org.hamcrest.Matchers.containsString("Location"),
+                        org.hamcrest.Matchers.containsString("Retry-After"))));
+    }
+
+    @Test
+    void aWildcardOriginNeverComesWithCredentials() {
+        var source = (org.springframework.web.cors.UrlBasedCorsConfigurationSource)
+                new SecurityConfig().corsConfigurationSource(java.util.List.of("*"));
+        var config = source.getCorsConfigurations().get("/**");
+
+        org.assertj.core.api.Assertions.assertThat(config.getAllowCredentials()).isFalse();
     }
 }

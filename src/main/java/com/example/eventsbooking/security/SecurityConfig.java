@@ -77,17 +77,20 @@ public class SecurityConfig {
     }
 
     /**
-     * Browser frontends on another origin. Only the listed origins are allowed. Credentials (cookies) are not
-     * allowed on purpose: the JWT travels in the Authorization header.
+     * Browser frontends on another origin. Only the listed origins are allowed. Credentials (the session cookies) are
+     * allowed only for an explicit list: with "*" any site could make the browser send them, so then they are off.
      */
     @Bean
     CorsConfigurationSource corsConfigurationSource(
             @Value("${app.cors.allowed-origins:}") List<String> allowedOrigins) {
+        List<String> origins = clean(allowedOrigins);
         CorsConfiguration cors = new CorsConfiguration();
-        cors.setAllowedOrigins(clean(allowedOrigins));
-        cors.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        cors.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept"));
-        cors.setAllowCredentials(false);
+        cors.setAllowedOrigins(origins);
+        cors.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+        cors.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept", "Idempotency-Key", "If-Match",
+                "If-None-Match"));
+        cors.setExposedHeaders(List.of("ETag", "Location", "Retry-After"));
+        cors.setAllowCredentials(!origins.isEmpty() && !origins.contains(CorsConfiguration.ALL));
         cors.setMaxAge(3600L);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", cors);
