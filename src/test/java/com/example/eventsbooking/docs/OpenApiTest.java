@@ -42,6 +42,28 @@ class OpenApiTest {
     }
 
     @Test
+    void openApiDeclaresTheCookieSessionNextToTheBearerHeader() throws Exception {
+        mockMvc.perform(get("/v3/api-docs"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.components.securitySchemes.cookieAuth.type").value("apiKey"))
+                .andExpect(jsonPath("$.components.securitySchemes.cookieAuth.in").value("cookie"))
+                .andExpect(jsonPath("$.components.securitySchemes.cookieAuth.name").value("access_token"));
+    }
+
+    @Test
+    void openApiDescribesTheErrorBody() throws Exception {
+        mockMvc.perform(get("/v3/api-docs"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.components.schemas.ProblemDetail.properties.type").exists())
+                .andExpect(jsonPath("$.components.schemas.ProblemDetail.properties.title").exists())
+                .andExpect(jsonPath("$.components.schemas.ProblemDetail.properties.status").exists())
+                .andExpect(jsonPath("$.components.schemas.ProblemDetail.properties.detail").exists())
+                .andExpect(jsonPath("$.components.schemas.ProblemDetail.properties.instance").exists())
+                .andExpect(jsonPath("$.components.schemas.ProblemDetail.properties.errors.items.properties.field")
+                        .exists());
+    }
+
+    @Test
     void swaggerUiIsPublic() throws Exception {
         mockMvc.perform(get("/swagger-ui/index.html"))
                 .andExpect(status().isOk())
