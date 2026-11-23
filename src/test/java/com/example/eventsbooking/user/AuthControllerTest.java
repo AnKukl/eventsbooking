@@ -32,8 +32,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(AuthController.class)
-@Import(SecurityConfig.class)
-@org.springframework.boot.context.properties.EnableConfigurationProperties(RefreshProperties.class)
+@Import({SecurityConfig.class, AuthRateLimiter.class, AuthRateLimitControllerTest.FixedClock.class})
+@org.springframework.boot.context.properties.EnableConfigurationProperties({RefreshProperties.class,
+        RateLimitProperties.class})
 @TestConstructor(autowireMode = TestConstructor.AutowireMode.ALL)
 class AuthControllerTest {
 

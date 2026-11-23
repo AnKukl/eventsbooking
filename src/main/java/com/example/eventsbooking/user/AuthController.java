@@ -1,6 +1,7 @@
 package com.example.eventsbooking.user;
 
 import com.example.eventsbooking.security.AuthCookies;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpHeaders;
@@ -22,28 +23,34 @@ class AuthController {
     private final AuthService service;
     private final AuthCookies cookies;
     private final RefreshProperties refresh;
+    private final AuthRateLimiter limiter;
 
-    AuthController(AuthService service, AuthCookies cookies, RefreshProperties refresh) {
+    AuthController(AuthService service, AuthCookies cookies, RefreshProperties refresh, AuthRateLimiter limiter) {
         this.service = service;
         this.cookies = cookies;
         this.refresh = refresh;
+        this.limiter = limiter;
     }
 
     @PostMapping("/register")
     @ResponseStatus(HttpStatus.CREATED)
-    UserResponse register(@Valid @RequestBody RegisterRequest request) {
+    UserResponse register(@Valid @RequestBody RegisterRequest request, HttpServletRequest http) {
+        limiter.check("register", http.getRemoteAddr(), request.email());
         return UserResponse.from(service.register(request));
     }
 
     @PostMapping("/login")
-    ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
+    ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request, HttpServletRequest http) {
+        limiter.check("login", http.getRemoteAddr(), request.email());
         return withCookies(service.startSession(request));
     }
 
     /** New access and refresh cookies for a valid refresh cookie; any failure clears both and answers 401. */
     @PostMapping("/refresh")
     ResponseEntity<LoginResponse> refresh(
-            @CookieValue(name = AuthCookies.REFRESH, required = false) String refreshToken, HttpServletResponse response) {
+            @CookieValue(name = AuthCookies.REFRESH, required = false) String refreshToken, HttpServletRequest http,
+            HttpServletResponse response) {
+        limiter.check("refresh", http.getRemoteAddr(), null);
         try {
             return withCookies(service.refresh(refreshToken));
         } catch (RefreshTokenRejectedException e) {
