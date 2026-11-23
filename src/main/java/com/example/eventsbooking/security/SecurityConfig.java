@@ -41,6 +41,9 @@ public class SecurityConfig {
             JwtAuthenticationConverter jwtAuthenticationConverter,
             @Value("${app.cors.allowed-origins:}") List<String> allowedOrigins) throws Exception {
         http
+                // our own Cache-Control policy (no-store for private data) replaces the blanket default of Spring Security
+                .headers(headers -> headers.cacheControl(cache -> cache.disable()))
+                .addFilterBefore(new NoStoreFilter(), org.springframework.web.filter.CorsFilter.class)
                 // CSRF for the cookie session: state-changing requests with a session cookie must come from an allowed origin
                 .addFilterBefore(new OriginCheckFilter(java.util.Set.copyOf(clean(allowedOrigins)), problemHandlers),
                         org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter.class)

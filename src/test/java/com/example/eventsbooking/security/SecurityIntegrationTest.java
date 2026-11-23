@@ -26,6 +26,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -305,6 +306,42 @@ class SecurityIntegrationTest {
                         .header(HttpHeaders.ORIGIN, FRONTEND)
                         .contentType(MediaType.APPLICATION_JSON).content(credentials("relogin@example.com", PASSWORD)))
                 .andExpect(status().isOk());
+    }
+
+    // ---------- caching of private data ----------
+
+    @Test
+    void privateResponsesAreNeverStored() throws Exception {
+        String token = registerAndLogin("no-store@example.com", "USER");
+
+        mockMvc.perform(get("/api/me").header(HttpHeaders.AUTHORIZATION, "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.CACHE_CONTROL, "no-store"));
+        mockMvc.perform(get("/api/bookings/my").header(HttpHeaders.AUTHORIZATION, "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.CACHE_CONTROL, "no-store"));
+        mockMvc.perform(get("/api/me"))                                   // an error about private data too
+                .andExpect(status().isUnauthorized())
+                .andExpect(header().string(HttpHeaders.CACHE_CONTROL, "no-store"));
+    }
+
+    @Test
+    void thePublicCatalogKeepsItsOwnCaching() throws Exception {
+        String organizer = registerAndLogin("cache-org@example.com", "ORGANIZER");
+        String created = mockMvc.perform(post("/api/events").header(HttpHeaders.AUTHORIZATION, "Bearer " + organizer)
+                        .contentType(MediaType.APPLICATION_JSON).content(EVENT))
+                .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
+        long id = ((Number) JsonPath.read(created, "$.id")).longValue();
+
+        mockMvc.perform(get("/api/events/" + id + "/preview"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.CACHE_CONTROL, org.hamcrest.Matchers.allOf(
+                        org.hamcrest.Matchers.containsString("max-age=300"),
+                        org.hamcrest.Matchers.containsString("public"),
+                        org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("no-store")))));
+        mockMvc.perform(get("/api/events/" + id))
+                .andExpect(status().isOk())
+                .andExpect(header().doesNotExist(HttpHeaders.CACHE_CONTROL));
     }
 
     // ---------- helpers ----------
