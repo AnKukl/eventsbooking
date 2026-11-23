@@ -37,8 +37,8 @@ $env:JWT_SECRET = "..."
 - Swagger UI: <http://localhost:8080/swagger-ui.html>
 - OpenAPI JSON: <http://localhost:8080/v3/api-docs>
 
-Документация открыта без токена. Чтобы пробовать защищённые методы, получите токен через `POST /api/auth/login`
-и нажмите **Authorize** в Swagger UI.
+Документация открыта без токена (кроме профиля `prod`). Чтобы пробовать защищённые методы, выполните
+`POST /api/auth/login` прямо в Swagger UI: браузер получит cookie сессии и будет отправлять её сам.
 
 ## Схема
 
@@ -60,8 +60,10 @@ flowchart LR
 
 | Метод | Путь | Доступ | Описание |
 |---|---|---|---|
-| POST | `/api/auth/register` | открыт | регистрация; всегда `USER`, а с верным `inviteCode` (`ORGANIZER_INVITE_CODE`) — `ORGANIZER` |
-| POST | `/api/auth/login` | открыт | вход, возвращает JWT |
+| POST | `/api/auth/register` | открыт | регистрация; всегда `USER`, а с верным `inviteCode` (`ORGANIZER_INVITE_CODE`) — `ORGANIZER`. 10 в минуту с адреса и на email |
+| POST | `/api/auth/login` | открыт | вход: ставит cookie `access_token` (15 минут) и `refresh_token` (14 дней, только `/api/auth`), обе HttpOnly; в теле только `{"expiresIn": ...}`. Не больше 10 попыток в минуту с адреса и на email (`429` + `Retry-After`) |
+| POST | `/api/auth/refresh` | cookie `refresh_token` | новая пара cookie (ротация); отозванный или истёкший токен — `401` и очистка cookie. 10 в минуту с адреса |
+| POST | `/api/auth/logout` | открыт | `204`, отзывает refresh-токен и стирает обе cookie |
 | GET | `/api/me` | любой пользователь с токеном | текущий пользователь: id, email, роль, имя, телефон, язык, город, `emailVerified` |
 | PATCH | `/api/me` | любой пользователь с токеном | изменить `name`, `phone` (`+48123456789`), `language` (`RU`/`PL`/`EN`), `city`; не переданное не меняется, пустая строка очищает; email здесь не меняется |
 | POST | `/api/me/email-change` | любой пользователь с токеном | сменить email: `{"newEmail": "..."}`, `202`; адрес меняется после подтверждения; не чаще раза в минуту (`429` + `Retry-After`) |
@@ -94,9 +96,18 @@ flowchart LR
 | GET | `/actuator/health` | открыт | состояние приложения |
 | GET | `/v3/api-docs`, `/swagger-ui.html` | открыт | OpenAPI и Swagger UI |
 
-Ошибки — `application/problem+json` (RFC 9457): 400 (валидация, со списком полей), 401, 403, 404, 409. `503` с `Retry-After`, если недоступна база данных.
+Ошибки — `application/problem+json` (RFC 9457, схема `ProblemDetail` в OpenAPI): 400 (валидация, со списком полей), 401,
+403, 404, 409, 422, 429. `503` с `Retry-After`, если недоступна база данных. Приватные ответы под `/api` идут с
+`Cache-Control: no-store`. Контракт API зафиксирован в [docs/openapi.json](docs/openapi.json) (тест `OpenApiSnapshotTest`
+падает при расхождении); в профиле `prod` Swagger UI и `/v3/api-docs` выключены.
 
-**Для браузерного клиента:** CORS разрешён для origin из `CORS_ALLOWED_ORIGINS` (по умолчанию `http://localhost:5173` и `http://localhost:3000`), токен передаётся заголовком `Authorization: Bearer ...`. Организаторов регистрирует тот, кто знает `ORGANIZER_INVITE_CODE`: задайте его переменной окружения перед `docker compose up` (`$env:ORGANIZER_INVITE_CODE = "..."`), иначе роль `ORGANIZER` недоступна.
+**Для браузерного клиента:** сессия — HttpOnly cookie, токен в JavaScript не попадает (решение 017). Запросы с cookie
+и методом `POST/PUT/PATCH/DELETE` принимаются только с `Origin` из `CORS_ALLOWED_ORIGINS` (по умолчанию
+`http://localhost:5173` и `http://localhost:3000`) или с origin самого API, иначе `403`. CORS разрешает credentials
+только для этого списка. Cookie по умолчанию `Secure`. На `http://localhost` браузеры принимают их и так; для http на другом хосте задайте
+`APP_SECURITY_COOKIE_SECURE=false`. Swagger UI после `POST /api/auth/login` работает через cookie; скрипты могут
+по-прежнему слать `Authorization: Bearer ...`. Организаторов регистрирует тот, кто знает `ORGANIZER_INVITE_CODE`: задайте его переменной
+окружения перед `docker compose up` (`$env:ORGANIZER_INVITE_CODE = "..."`), иначе роль `ORGANIZER` недоступна.
 
 ## Следующий шаг: dead letter topic
 
