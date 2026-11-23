@@ -34,3 +34,9 @@ build/
 
 ### Compiled classes (practice files in root) ###
 *.class
+
+### Local backups and frontend build output ###
+backups/
+*.dump
+frontend/node_modules/
+frontend/dist/
