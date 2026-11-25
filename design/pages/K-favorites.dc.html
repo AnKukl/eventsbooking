@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Кабинет: Избранное</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Inter:wght@400;500;600&display=swap">
+<style>
+body{margin:0}
+button{font:inherit}
+.card{background: #F4EAD9; border-radius: 18px; padding: 20px; box-sizing: border-box; color: #2E241D; display: flex; flex-direction: column; gap: 8px; box-shadow: 0 14px 24px rgba(20,12,6,0.35), 0 2px 4px rgba(20,12,6,0.2), inset 0 1px 0 rgba(255,255,255,0.7)}
+</style>
+</helmet>
+<div style="width: 1280px; height: 900px; box-sizing: border-box; padding: 32px 48px; background: linear-gradient(180deg, #F3EADB 0%, #E2CFB3 55%, #C9AE8C 100%); color: #2E241D; font-family: Inter, sans-serif; display: flex; flex-direction: column; gap: 22px">
+  <header style="display: flex; justify-content: space-between; align-items: center">
+    <a href="#" style="display: flex; align-items: center; gap: 12px; text-decoration: none; color: #2E241D"><svg width="40" height="40" viewBox="0 0 40 40" aria-hidden="true"><mask id="ebm-K"><rect width="40" height="40" rx="9" fill="#FFFFFF"/><circle cx="0" cy="20" r="4.5" fill="#000000"/><circle cx="40" cy="20" r="4.5" fill="#000000"/></mask><rect width="40" height="40" rx="9" fill="#B5563A" mask="url(#ebm-K)"/><rect x="13" y="11" width="3.2" height="18" fill="#F4EAD9"/><rect x="13" y="11" width="14" height="3.2" fill="#F4EAD9"/><rect x="13" y="18.4" width="11" height="3.2" fill="#F4EAD9"/><rect x="13" y="25.8" width="14" height="3.2" fill="#F4EAD9"/></svg><span style="font-family: Fraunces, serif; font-size: 24px; font-weight: 600">Events Booking</span></a>
+    <a href="#" style="display: flex; align-items: center; gap: 10px; padding: 8px 16px 8px 8px; background: #E8D9C0; color: #2E241D; border-radius: 999px; font-weight: 600; font-size: 14px; text-decoration: none"><span style="width: 30px; height: 30px; border-radius: 50%; background: #D9C7AE; display: flex; align-items: center; justify-content: center"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M2 7.5 8 2.5l6 5V14h-4v-4H6v4H2z" fill="#2E241D"/></svg></span>Главная</a>
+  </header>
+
+  <div style="display: grid; grid-template-columns: 220px 1fr; gap: 24px; flex: 1">
+    <nav style="display: flex; flex-direction: column; gap: 6px">
+      <button style="text-align: left; padding: 12px 14px; border: none; border-radius: 12px; background: transparent; color: #2E241D; font-size: 15px">Мои брони</button>
+      <button style="text-align: left; padding: 12px 14px; border: none; border-radius: 12px; background: #3A2C22; color: #F4EAD9; font-weight: 600; font-size: 15px">Избранное · 4</button>
+      <button style="text-align: left; padding: 12px 14px; border: none; border-radius: 12px; background: transparent; color: #2E241D; font-size: 15px">Профиль</button>
+      <button style="text-align: left; padding: 12px 14px; border: none; border-radius: 12px; background: transparent; color: #2E241D; font-size: 15px">Уведомления · 3</button>
+      <button style="margin-top: auto; text-align: left; padding: 12px 14px; border: none; border-radius: 12px; background: transparent; color: #B5563A; font-size: 15px">Выйти</button>
+    </nav>
+
+    <main style="display: flex; flex-direction: column; gap: 18px; min-width: 0">
+      <div style="display: flex; justify-content: space-between; align-items: flex-end">
+        <h1 style="margin: 0; font-family: Fraunces, serif; font-weight: 600; font-size: 40px">Избранное</h1>
+        <div style="display: flex; gap: 8px; font-size: 13px">
+          <button style="padding: 8px 14px; border-radius: 999px; border: none; background: #16201E; color: #EEF1EC; cursor: pointer">Все</button>
+          <button style="padding: 8px 14px; border-radius: 999px; border: 1px solid #2E241D; background: transparent; color: #2E241D; cursor: pointer">Скоро</button>
+          <button style="padding: 8px 14px; border-radius: 999px; border: 1px solid #2E241D; background: transparent; color: #2E241D; cursor: pointer">Нет мест</button>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; flex: 1; align-content: start">
+        <div class="card">
+          <div style="display: flex; justify-content: space-between; align-items: center"><span style="font-size: 12px; font-weight: 600; color: #B5563A">Сегодня · 19:30</span><button aria-label="Убрать из избранного" style="width: 36px; height: 36px; border-radius: 50%; border: none; background: #16201E; color: #E0533A; font-size: 16px; cursor: pointer">♥</button></div>
+          <span style="font-family: Fraunces, serif; font-size: 24px">Late set: джаз-трио</span>
+          <span style="font-size: 14px; color: #6E5A48">Grand Cafe, Сопот · 12 мест</span>
+          <div style="margin-top: 6px; display: flex; justify-content: space-between; align-items: center"><span style="background: #3A2C22; color: #F4EAD9; border-radius: 999px; padding: 5px 12px; font-size: 12px; font-weight: 600">18 PLN</span><button style="padding: 10px 16px; background: #16201E; color: #EEF1EC; border: none; border-radius: 10px; font-weight: 600; cursor: pointer; font-size: 14px">Забронировать</button></div>
+        </div>
+        <div class="card">
+          <div style="display: flex; justify-content: space-between; align-items: center"><span style="font-size: 12px; font-weight: 600; color: #B5563A">Суббота · 11:00</span><button aria-label="Убрать из избранного" style="width: 36px; height: 36px; border-radius: 50%; border: none; background: #16201E; color: #E0533A; font-size: 16px; cursor: pointer">♥</button></div>
+          <span style="font-family: Fraunces, serif; font-size: 24px">Мастер-класс по керамике</span>
+          <span style="font-size: 14px; color: #6E5A48">Гданьск · 6 мест</span>
+          <div style="margin-top: 6px; display: flex; justify-content: space-between; align-items: center"><span style="background: #3A2C22; color: #F4EAD9; border-radius: 999px; padding: 5px 12px; font-size: 12px; font-weight: 600">80 PLN</span><button style="padding: 10px 16px; background: #16201E; color: #EEF1EC; border: none; border-radius: 10px; font-weight: 600; cursor: pointer; font-size: 14px">Забронировать</button></div>
+        </div>
+        <div class="card" style="opacity: 0.92">
+          <div style="display: flex; justify-content: space-between; align-items: center"><span style="font-size: 12px; font-weight: 600; color: #6E5A48">Нет мест</span><button aria-label="Убрать из избранного" style="width: 36px; height: 36px; border-radius: 50%; border: none; background: #16201E; color: #E0533A; font-size: 16px; cursor: pointer">♥</button></div>
+          <span style="font-family: Fraunces, serif; font-size: 24px">Кухня Pomorza, дегустация</span>
+          <span style="font-size: 14px; color: #6E5A48">Гдыня · 65 PLN</span>
+          <div style="margin-top: 6px; display: flex; justify-content: space-between; align-items: center"><span style="font-size: 13px; color: #6E5A48">Сообщим, когда появятся места</span><button style="padding: 10px 16px; border: 1px solid #2E241D; background: transparent; color: #2E241D; border-radius: 10px; cursor: pointer; font-size: 14px">Уведомить</button></div>
+        </div>
+        <div class="card" style="justify-content: center; align-items: flex-start; background: transparent; box-shadow: none; border: 1px dashed #9C8464">
+          <span style="font-size: 14px; color: #5A4632">Сохраняйте события кнопкой ♥ на карточке, и они появятся здесь.</span>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":900}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

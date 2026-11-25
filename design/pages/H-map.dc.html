@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Ход 3: Карта</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Inter:wght@400;500;600&display=swap">
+<style>
+body{margin:0}
+button{font:inherit}
+.glass{position: absolute; background: rgba(255,255,255,0.55); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border: 1px solid rgba(255,255,255,0.7); border-radius: 18px; box-sizing: border-box; color: #2E241D; box-shadow: 0 14px 24px rgba(20,12,6,0.25)}
+.pin{position: absolute; width: 34px; height: 34px; margin: -17px 0 0 -17px; border-radius: 50%; background: #16201E; color: #F4EAD9; font-weight: 600; font-size: 14px; display: flex; align-items: center; justify-content: center; box-shadow: 0 6px 12px rgba(20,12,6,0.35)}
+.pin.on{background: #B5563A; width: 40px; height: 40px; margin: -20px 0 0 -20px}
+.road{position: absolute; background: #E8D9BF}
+</style>
+</helmet>
+<div style="width: 1280px; height: 900px; box-sizing: border-box; padding: 32px 48px; background: linear-gradient(180deg, #F3EADB 0%, #E2CFB3 55%, #C9AE8C 100%); color: #2E241D; font-family: Inter, sans-serif; display: flex; flex-direction: column; gap: 18px">
+  <header style="display: flex; justify-content: space-between; align-items: center; gap: 16px">
+    <a href="#" style="display: flex; align-items: center; gap: 12px; text-decoration: none; color: #2E241D"><svg width="40" height="40" viewBox="0 0 40 40" aria-hidden="true"><mask id="ebm-H"><rect width="40" height="40" rx="9" fill="#FFFFFF"/><circle cx="0" cy="20" r="4.5" fill="#000000"/><circle cx="40" cy="20" r="4.5" fill="#000000"/></mask><rect width="40" height="40" rx="9" fill="#B5563A" mask="url(#ebm-H)"/><rect x="13" y="11" width="3.2" height="18" fill="#F4EAD9"/><rect x="13" y="11" width="14" height="3.2" fill="#F4EAD9"/><rect x="13" y="18.4" width="11" height="3.2" fill="#F4EAD9"/><rect x="13" y="25.8" width="14" height="3.2" fill="#F4EAD9"/></svg><span style="font-family: Fraunces, serif; font-size: 24px; font-weight: 600">Events Booking</span></a>
+    <div style="display: flex; gap: 6px; background: #E8D9C0; padding: 4px; border-radius: 999px; font-size: 14px">
+      <button style="padding: 8px 16px; border: none; border-radius: 999px; background: transparent; color: #2E241D; cursor: pointer">Список</button>
+      <button style="padding: 8px 16px; border: none; border-radius: 999px; background: #16201E; color: #F4EAD9; cursor: pointer">Карта</button>
+    </div>
+    <button style="display: flex; align-items: center; gap: 10px; padding: 8px 16px 8px 8px; border: none; background: #16201E; color: #EEF1EC; border-radius: 999px; font-weight: 600; font-size: 14px"><span style="width: 30px; height: 30px; border-radius: 50%; background: #E0533A; color: #16201E; display: flex; align-items: center; justify-content: center; font-size: 13px">А</span>Кабинет</button>
+  </header>
+
+  <div style="position: relative; flex: 1; border-radius: 22px; overflow: hidden; background: #E9DCC6; box-shadow: inset 0 0 0 1px #D2BF9F">
+    <div style="position: absolute; left: 0; top: 0; width: 34%; height: 100%; background: #C8D3CA"></div>
+    <div class="road" style="left: 0; top: 40%; width: 100%; height: 14px"></div>
+    <div class="road" style="left: 52%; top: 0; width: 14px; height: 100%"></div>
+    <div class="road" style="left: 0; top: 74%; width: 100%; height: 10px"></div>
+    <div class="road" style="left: 22%; top: 0; width: 10px; height: 100%"></div>
+
+    <div class="pin" style="left: 46%; top: 30%">1</div>
+    <div class="pin on" style="left: 58%; top: 52%">2</div>
+    <div class="pin" style="left: 70%; top: 24%">3</div>
+    <div class="pin" style="left: 36%; top: 64%">4</div>
+
+    <div class="glass" style="left: 24px; top: 24px; width: 300px; padding: 18px 20px; display: flex; flex-direction: column; gap: 8px">
+      <span style="font-size: 12px; color: #4A5350">Сегодня рядом · 4 события</span>
+      <span style="font-family: Fraunces, serif; font-size: 22px">Вы в Сопоте, Монте-Кассино</span>
+      <input placeholder="Адрес или название" style="padding: 10px 12px; border-radius: 10px; border: 1px solid #C9B497; background: #FFFFFF; font: inherit; font-size: 14px; box-sizing: border-box">
+    </div>
+
+    <div class="glass" style="right: 24px; bottom: 24px; width: 380px; padding: 20px; display: flex; flex-direction: column; gap: 10px">
+      <span style="font-size: 12px; color: #B5563A; font-weight: 600">2 · Сегодня 19:30 · 12 мест</span>
+      <span style="font-family: Fraunces, serif; font-size: 24px">Late set: джаз-трио</span>
+      <span style="font-size: 14px; color: #4A5350">Grand Cafe · 6 минут пешком · 18 PLN</span>
+      <div style="display: flex; gap: 10px; margin-top: 4px">
+        <button style="flex: 1; padding: 12px; background: #16201E; color: #EEF1EC; border: none; border-radius: 10px; font-weight: 600; cursor: pointer">Забронировать</button>
+        <button style="padding: 12px 14px; border: 1px solid #2E241D; background: transparent; color: #2E241D; border-radius: 10px; cursor: pointer">Маршрут</button>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":900}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

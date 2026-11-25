@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Концепция D: Bento и стекло</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Inter:wght@400;500;600&display=swap">
+<style>
+body{margin:0}
+button{font:inherit}
+.photo{position: relative; border-radius: 18px; overflow: hidden; background: #CFC8BA; color: #3D3A33; font-size: 12px; line-height: 1.4; padding: 14px; box-sizing: border-box; }
+.glass{position: absolute; left: 16px; right: 16px; bottom: 16px; background: rgba(255,255,255,0.55); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border: 1px solid rgba(255,255,255,0.7); border-radius: 16px; padding: 16px 18px; box-sizing: border-box; color: #16201E}
+.solid{background: #FFFFFF; border-radius: 18px; padding: 20px; box-sizing: border-box; color: #16201E}
+</style>
+</helmet>
+<div style="width: 1280px; height: 900px; box-sizing: border-box; padding: 32px 48px; background: linear-gradient(180deg, #F3EADB 0%, #E2CFB3 55%, #C9AE8C 100%); color: #16201E; font-family: Inter, sans-serif; display: flex; flex-direction: column; gap: 22px">
+  <header style="display: flex; justify-content: space-between; align-items: center">
+    <a href="#" style="display: flex; align-items: center; gap: 12px; text-decoration: none; color: #2E241D"><svg width="40" height="40" viewBox="0 0 40 40" aria-hidden="true"><mask id="ebm-D"><rect width="40" height="40" rx="9" fill="#FFFFFF"/><circle cx="0" cy="20" r="4.5" fill="#000000"/><circle cx="40" cy="20" r="4.5" fill="#000000"/></mask><rect width="40" height="40" rx="9" fill="#B5563A" mask="url(#ebm-D)"/><rect x="13" y="11" width="3.2" height="18" fill="#F4EAD9"/><rect x="13" y="11" width="14" height="3.2" fill="#F4EAD9"/><rect x="13" y="18.4" width="11" height="3.2" fill="#F4EAD9"/><rect x="13" y="25.8" width="14" height="3.2" fill="#F4EAD9"/></svg><span style="font-family: Fraunces, serif; font-size: 24px; font-weight: 600">Events Booking</span></a>
+    <div style="display: flex; gap: 12px; align-items: center">
+      <div style="display: flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: 999px; background: rgba(255,255,255,0.6); border: 1px solid rgba(255,255,255,0.8); font-size: 14px; color: #4A5350; width: 340px">Поиск: события, даты, настроение</div>
+      <button style="display: flex; align-items: center; gap: 10px; padding: 8px 16px 8px 8px; border: none; background: #16201E; color: #EEF1EC; border-radius: 999px; cursor: pointer; font-weight: 600; font-size: 14px"><span style="width: 30px; height: 30px; border-radius: 50%; background: #E0533A; color: #16201E; display: flex; align-items: center; justify-content: center; font-size: 13px">А</span>Кабинет</button>
+    </div>
+  </header>
+
+  <div style="display: grid; grid-template-columns: repeat(4, 1fr); grid-template-rows: 280px 280px 200px; gap: 16px; flex: 1">
+    <div class="photo" style="grid-column: 1 / span 2; grid-row: 1 / span 2">
+      <img src="/_blob/b27fbb0e17f4677f2c2f8fab04f192cd" alt="Marble statue in an empty gallery" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover">
+      <div class="glass">
+        <div style="font-size: 12px; color: #4A5350">Галерея · сегодня 18:00 · Национальный музей, Гданьск</div>
+        <div style="font-family: Fraunces, serif; font-size: 30px; line-height: 1.1; margin-top: 6px">Свет на мраморе: ночь в галерее</div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 12px">
+          <span style="font-size: 14px">Осталось 14 мест</span>
+          <button style="padding: 12px 18px; background: #16201E; color: #EEF1EC; border: none; border-radius: 10px; font-weight: 600; cursor: pointer">Забронировать</button>
+        </div>
+      </div>
+      <span style="position: absolute; top: 14px; right: 14px; background: #FFFFFF; padding: 6px 12px; border-radius: 999px; font-weight: 600; color: #16201E">45 PLN</span><button aria-label="Добавить в избранное" aria-pressed="false" style="position: absolute; top: 14px; left: 14px; width: 42px; height: 42px; border-radius: 50%; border: none; background: rgba(255,255,255,0.75); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); color: #16201E; font-size: 19px; cursor: pointer; display: flex; align-items: center; justify-content: center">♡</button>
+    </div>
+
+    <div class="photo" style="grid-column: 3; grid-row: 1">
+      <img src="/_blob/fec9df841cb300d2c9e69c38a2384d27" alt="Jazz trio on a club stage" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover">
+      <div class="glass" style="bottom: 12px; left: 12px; right: 12px; padding: 12px 14px">
+        <div style="font-weight: 600; font-size: 16px">Late set: джаз-трио</div>
+        <div style="font-size: 12px; color: #4A5350; margin-top: 2px">Grand Cafe · 19:30 · 12 мест</div>
+      </div>
+      <span style="position: absolute; top: 12px; right: 12px; background: #FFFFFF; padding: 4px 10px; border-radius: 999px; font-size: 13px; font-weight: 600; color: #16201E">18 PLN</span><button aria-label="Добавить в избранное" aria-pressed="false" style="position: absolute; top: 12px; left: 12px; width: 36px; height: 36px; border-radius: 50%; border: none; background: rgba(255,255,255,0.75); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); color: #16201E; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center">♡</button>
+    </div>
+
+    <div class="photo" style="grid-column: 4; grid-row: 1">
+      <img src="/_blob/fd8e91150231ca7309b655742522910d" alt="Lighthouse on the Baltic coast at dusk" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover">
+      <div class="glass" style="bottom: 12px; left: 12px; right: 12px; padding: 12px 14px">
+        <div style="font-weight: 600; font-size: 16px">Маяки Балтики</div>
+        <div style="font-size: 12px; color: #4A5350; margin-top: 2px">Лекция · Gdańsk · 3 места</div>
+      </div>
+      <span style="position: absolute; top: 12px; right: 12px; background: #FFFFFF; padding: 4px 10px; border-radius: 999px; font-size: 13px; font-weight: 600; color: #16201E">Бесплатно</span><button aria-label="Добавить в избранное" aria-pressed="false" style="position: absolute; top: 12px; left: 12px; width: 36px; height: 36px; border-radius: 50%; border: none; background: rgba(255,255,255,0.75); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); color: #16201E; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center">♡</button>
+    </div>
+
+    <div class="photo" style="grid-column: 3; grid-row: 2">
+      <img src="/_blob/3660a89b2f9bd1fd3566277cacc9d566" alt="Plated sea bass with herbs" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover">
+      <div class="glass" style="bottom: 12px; left: 12px; right: 12px; padding: 12px 14px">
+        <div style="font-weight: 600; font-size: 16px">Pomorze: дегустация</div>
+        <div style="font-size: 12px; color: #4A5350; margin-top: 2px">Gdynia · 20:00 · 40 мест</div>
+      </div>
+      <span style="position: absolute; top: 12px; right: 12px; background: #FFFFFF; padding: 4px 10px; border-radius: 999px; font-size: 13px; font-weight: 600; color: #16201E">65 PLN</span><button aria-label="Добавить в избранное" aria-pressed="false" style="position: absolute; top: 12px; left: 12px; width: 36px; height: 36px; border-radius: 50%; border: none; background: rgba(255,255,255,0.75); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); color: #16201E; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center">♡</button>
+    </div>
+
+    <div class="solid" style="grid-column: 4; grid-row: 2; display: flex; flex-direction: column; gap: 10px">
+      <span style="font-size: 12px; color: #4A5350">Сегодня рядом</span>
+      <span style="font-family: Fraunces, serif; font-size: 26px; line-height: 1.1">Что успеть до 21:00</span>
+      <button style="margin-top: auto; padding: 12px; border: 1px solid #16201E; background: transparent; border-radius: 10px; cursor: pointer">Открыть карту</button>
+    </div>
+
+    <div style="grid-column: 1 / span 4; grid-row: 3; background: #3A2C22; border-radius: 20px; padding: 22px 24px; box-sizing: border-box; box-shadow: inset 0 1px 0 rgba(255,235,210,0.12); display: grid; grid-template-columns: 240px 1fr 1fr 1fr; gap: 18px; align-items: stretch">
+      <div style="display: flex; flex-direction: column; justify-content: space-between"><span style="font-size: 12px; color: #D9B99B; text-transform: uppercase; letter-spacing: 1.5px">Скоро</span><span style="font-family: Fraunces, serif; font-size: 34px; line-height: 1.05; color: #F3E7D6">В эту неделю</span><span style="font-size: 13px; color: #CDB79C">Ещё 9 событий в Сопоте · все →</span></div>
+      <div style="background: #F4EAD9; border-radius: 16px; padding: 16px 18px; box-sizing: border-box; display: flex; flex-direction: column; gap: 8px; color: #2E241D; box-shadow: 0 14px 24px rgba(20,12,6,0.4), 0 2px 4px rgba(20,12,6,0.25), inset 0 1px 0 rgba(255,255,255,0.7)"><span style="font-size: 13px; font-weight: 600; color: #B5563A">Завтра · 20:00</span><span style="font-size: 17px; font-weight: 600">Квиз-вечер в Stara Bramka</span><span style="font-size: 13px; color: #6E5A48">Бар · столиков 24</span><span style="margin-top: auto; align-self: flex-start; background: #3A2C22; color: #F4EAD9; border-radius: 999px; padding: 5px 12px; font-size: 12px; font-weight: 600">12 PLN</span></div>
+      <div style="background: #F4EAD9; border-radius: 16px; padding: 16px 18px; box-sizing: border-box; display: flex; flex-direction: column; gap: 8px; color: #2E241D; box-shadow: 0 14px 24px rgba(20,12,6,0.4), 0 2px 4px rgba(20,12,6,0.25), inset 0 1px 0 rgba(255,255,255,0.7)"><span style="font-size: 13px; font-weight: 600; color: #B5563A">Суббота · 11:00</span><span style="font-size: 17px; font-weight: 600">Мастер-класс по керамике</span><span style="font-size: 13px; color: #6E5A48">Глинянная мастерская · 6 мест</span><span style="margin-top: auto; align-self: flex-start; background: #3A2C22; color: #F4EAD9; border-radius: 999px; padding: 5px 12px; font-size: 12px; font-weight: 600">80 PLN</span></div>
+      <div style="background: #F4EAD9; border-radius: 16px; padding: 16px 18px; box-sizing: border-box; display: flex; flex-direction: column; gap: 8px; color: #2E241D; box-shadow: 0 14px 24px rgba(20,12,6,0.4), 0 2px 4px rgba(20,12,6,0.25), inset 0 1px 0 rgba(255,255,255,0.7)"><span style="font-size: 13px; font-weight: 600; color: #B5563A">Воскресенье · 17:00</span><span style="font-size: 17px; font-weight: 600">Выставка фотографий</span><span style="font-size: 13px; color: #6E5A48">Зал в старом порту · без записи</span><span style="margin-top: auto; align-self: flex-start; background: #3A2C22; color: #F4EAD9; border-radius: 999px; padding: 5px 12px; font-size: 12px; font-weight: 600">Бесплатно</span></div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":900}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

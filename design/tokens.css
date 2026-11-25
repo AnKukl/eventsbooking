@@ -1,0 +1,157 @@
+/* Events Booking — design tokens extracted from the approved canvas (pages/*.dc.html).
+   Use these exact values. Do not invent new colours, shadows or radii. */
+
+:root {
+  /* Fonts (Google Fonts): Fraunces = headings, Inter = text */
+  --font-display: "Fraunces", serif;
+  --font-text: "Inter", sans-serif;
+
+  /* Page background (every board) */
+  --bg-gradient: linear-gradient(180deg, #F3EADB 0%, #E2CFB3 55%, #C9AE8C 100%);
+
+  /* Surfaces */
+  --card: #F4EAD9;
+  --card-soft: #F3EADB;
+  --white: #FFFFFF;
+  --glass: rgba(255, 255, 255, 0.55);            /* translucent window / panel */
+  --glass-blur: blur(14px);
+  --glass-border: 1px solid rgba(255, 255, 255, 0.8);
+  --scrim: rgba(40, 28, 18, 0.45);               /* modal backdrop */
+
+  /* Ink */
+  --ink: #2E241D;          /* primary text, wordmark */
+  --ink-2: #3A2C22;        /* dark brown */
+  --ink-muted: #6E5A48;    /* secondary text */
+  --ink-subtle: #4A5350;   /* captions on glass */
+
+  /* Dark / action */
+  --dark: #16201E;         /* primary button background */
+  --on-dark: #EEF1EC;      /* text on primary button */
+
+  /* Accents */
+  --accent: #B5563A;       /* terracotta: logo, brand accent */
+  --accent-2: #E0533A;     /* avatar / highlight */
+  --teal: #1E6B66;
+
+  /* Borders & shadows */
+  --card-shadow: 0 14px 24px rgba(20, 12, 6, 0.35), 0 2px 4px rgba(20, 12, 6, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  --card-shadow-strong: 0 14px 24px rgba(20, 12, 6, 0.4), 0 2px 4px rgba(20, 12, 6, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  --inset-line: inset 0 0 0 1px #D2BF9F;
+
+  /* Radii */
+  --radius-pill: 999px;
+  --radius-xl: 18px;
+  --radius-lg: 16px;
+  --radius-md: 12px;
+  --radius-sm: 10px;
+  --radius-xs: 8px;
+  --radius-circle: 50%;
+}
+
+/* Glass panel (translucent window over photo/gradient) */
+.glass {
+  background: var(--glass);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  border: var(--glass-border);
+  border-radius: var(--radius-lg);
+}
+
+/* Bento photo tile */
+.photo {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-xl);
+  box-shadow: var(--card-shadow);
+}
+
+/* Hover preview, variant A (chosen). Opens after 2 s of hover, closes 200 ms after the cursor leaves. */
+.hover-preview-image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 22%;
+}
+.hover-preview-fade {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 62%;
+  -webkit-backdrop-filter: blur(22px);
+  backdrop-filter: blur(22px);
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 45%);
+  mask-image: linear-gradient(to bottom, transparent 0%, #000 45%);
+}
+.hover-preview-fade::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, rgba(243, 234, 219, 0), rgba(243, 234, 219, 0.78));
+}
+.hover-preview-delay-ms { --hover-open-delay: 2000ms; --hover-close-delay: 200ms; }
+
+/* Favourite heart button on photo tiles */
+.fav-btn {
+  position: absolute;
+  width: 42px;
+  height: 42px;
+  border-radius: var(--radius-circle);
+  border: none;
+  background: rgba(255, 255, 255, 0.75);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  color: var(--dark);
+  font-size: 19px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Buttons */
+.btn-primary {
+  padding: 12px 18px;
+  background: var(--dark);
+  color: var(--on-dark);
+  border: none;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-text);
+  font-weight: 600;
+  cursor: pointer;
+}
+.btn-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 16px 8px 8px;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: var(--dark);
+  color: var(--on-dark);
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+/* Price chip on a photo */
+.price-chip {
+  background: var(--white);
+  padding: 6px 12px;
+  border-radius: var(--radius-pill);
+  font-weight: 600;
+  color: var(--dark);
+}
+
+/* Page background */
+body {
+  background: var(--bg-gradient);
+  color: var(--ink);
+  font-family: var(--font-text);
+}
+h1, h2, h3, .display {
+  font-family: var(--font-display);
+  color: var(--ink);
+}

@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Кабинет организатора</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Inter:wght@400;500;600&display=swap">
+<style>
+body{margin:0}
+button{font:inherit}
+.card{background: #F4EAD9; border-radius: 18px; padding: 20px; box-sizing: border-box; color: #2E241D; box-shadow: 0 14px 24px rgba(20,12,6,0.35), 0 2px 4px rgba(20,12,6,0.2), inset 0 1px 0 rgba(255,255,255,0.7)}
+.th{font-size: 12px; color: #6E5A48; text-transform: uppercase; letter-spacing: 1px; text-align: left; padding: 10px 8px; border-bottom: 1px solid #C9B497}
+.td{padding: 14px 8px; border-bottom: 1px solid #D9C7AE; font-size: 14px; vertical-align: middle}
+</style>
+</helmet>
+<div style="width: 1280px; height: 900px; box-sizing: border-box; padding: 32px 48px; background: linear-gradient(180deg, #F3EADB 0%, #E2CFB3 55%, #C9AE8C 100%); color: #2E241D; font-family: Inter, sans-serif; display: flex; flex-direction: column; gap: 22px">
+  <header style="display: flex; justify-content: space-between; align-items: center">
+    <span style="display: flex; align-items: center; gap: 12px"><svg width="40" height="40" viewBox="0 0 40 40" aria-hidden="true"><mask id="ebm-T"><rect width="40" height="40" rx="9" fill="#FFFFFF"/><circle cx="0" cy="20" r="4.5" fill="#000000"/><circle cx="40" cy="20" r="4.5" fill="#000000"/></mask><rect width="40" height="40" rx="9" fill="#B5563A" mask="url(#ebm-T)"/><rect x="13" y="11" width="3.2" height="18" fill="#F4EAD9"/><rect x="13" y="11" width="14" height="3.2" fill="#F4EAD9"/><rect x="13" y="18.4" width="11" height="3.2" fill="#F4EAD9"/><rect x="13" y="25.8" width="14" height="3.2" fill="#F4EAD9"/></svg><span style="font-family: Fraunces, serif; font-size: 24px; font-weight: 600">Events Booking</span><span style="margin-left: 8px; font-size: 12px; background: #16201E; color: #F4EAD9; padding: 4px 10px; border-radius: 999px">Организатор</span></span>
+    <div style="display: flex; gap: 10px"><button style="padding: 10px 16px; border: 1px solid #2E241D; background: transparent; color: #2E241D; border-radius: 10px; cursor: pointer">Выплаты</button><button style="padding: 10px 16px; background: #16201E; color: #EEF1EC; border: none; border-radius: 10px; font-weight: 600; cursor: pointer">+ Создать событие</button></div>
+  </header>
+
+  <div style="display: grid; grid-template-columns: 200px 1fr; gap: 24px; flex: 1">
+    <nav style="display: flex; flex-direction: column; gap: 6px">
+      <button style="text-align: left; padding: 12px 14px; border: none; border-radius: 12px; background: #3A2C22; color: #F4EAD9; font-weight: 600; font-size: 15px">Мероприятия</button>
+      <button style="text-align: left; padding: 12px 14px; border: none; border-radius: 12px; background: transparent; color: #2E241D; font-size: 15px">Брони</button>
+      <button style="text-align: left; padding: 12px 14px; border: none; border-radius: 12px; background: transparent; color: #2E241D; font-size: 15px">Аналитика</button>
+      <button style="text-align: left; padding: 12px 14px; border: none; border-radius: 12px; background: transparent; color: #2E241D; font-size: 15px">Выплаты</button>
+      <button style="margin-top: auto; text-align: left; padding: 12px 14px; border: none; border-radius: 12px; background: transparent; color: #2E241D; font-size: 15px">Настройки</button>
+    </nav>
+
+    <main style="display: flex; flex-direction: column; gap: 18px; min-width: 0">
+      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px">
+        <div class="card" style="display: flex; flex-direction: column; gap: 6px"><span style="font-size: 12px; color: #6E5A48">Продано за неделю</span><span style="font-family: Fraunces, serif; font-size: 36px">126</span><span style="font-size: 12px; color: #1E6B66">+18% к прошлой неделе</span></div>
+        <div class="card" style="display: flex; flex-direction: column; gap: 6px"><span style="font-size: 12px; color: #6E5A48">Выручка, PLN</span><span style="font-family: Fraunces, serif; font-size: 36px">5 670</span><span style="font-size: 12px; color: #6E5A48">Выплата в пятницу</span></div>
+        <div class="card" style="display: flex; flex-direction: column; gap: 6px"><span style="font-size: 12px; color: #6E5A48">Заполненность</span><span style="font-family: Fraunces, serif; font-size: 36px">74%</span><span style="font-size: 12px; color: #6E5A48">по 5 ближайшим событиям</span></div>
+      </div>
+
+      <div class="card" style="flex: 1; display: flex; flex-direction: column; gap: 8px; padding: 18px 22px">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px">
+          <span style="font-family: Fraunces, serif; font-size: 24px">Мои события</span>
+          <div style="display: flex; gap: 8px; font-size: 13px"><button style="padding: 7px 12px; border-radius: 999px; border: none; background: #16201E; color: #EEF1EC; cursor: pointer">Все</button><button style="padding: 7px 12px; border-radius: 999px; border: 1px solid #2E241D; background: transparent; cursor: pointer">Черновики · 2</button></div>
+        </div>
+        <table style="width: 100%; border-collapse: collapse">
+          <tr><th class="th">Событие</th><th class="th">Дата</th><th class="th">Продано</th><th class="th">Статус</th><th class="th"></th></tr>
+          <tr><td class="td"><b>Свет на мраморе</b><br><span style="color: #6E5A48; font-size: 12px">Галерея, Гданьск</span></td><td class="td">Сегодня 18:00</td><td class="td">26 / 40</td><td class="td"><span style="background: #DDEBE8; color: #1E6B66; padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 600">Опубликовано</span></td><td class="td" style="text-align: right"><button style="padding: 7px 12px; border: 1px solid #2E241D; background: transparent; border-radius: 8px; cursor: pointer; font-size: 13px">Редактировать</button></td></tr>
+          <tr><td class="td"><b>Late set: джаз-трио</b><br><span style="color: #6E5A48; font-size: 12px">Grand Cafe, Сопот</span></td><td class="td">Сегодня 19:30</td><td class="td">28 / 40</td><td class="td"><span style="background: #F3E3C7; color: #7A5417; padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 600">Мало мест</span></td><td class="td" style="text-align: right"><button style="padding: 7px 12px; border: 1px solid #2E241D; background: transparent; border-radius: 8px; cursor: pointer; font-size: 13px">Редактировать</button></td></tr>
+          <tr><td class="td"><b>Мастер-класс по керамике</b><br><span style="color: #6E5A48; font-size: 12px">Гданьск</span></td><td class="td">Суббота 11:00</td><td class="td">6 / 6</td><td class="td"><span style="background: #E8D9C0; color: #2E241D; padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 600">Распродано</span></td><td class="td" style="text-align: right"><button style="padding: 7px 12px; border: 1px solid #2E241D; background: transparent; border-radius: 8px; cursor: pointer; font-size: 13px">Брони</button></td></tr>
+          <tr><td class="td"><b>Лекция о Балтике</b><br><span style="color: #6E5A48; font-size: 12px">Черновик</span></td><td class="td">Не назначено</td><td class="td">0</td><td class="td"><span style="background: #EFE7DA; color: #5A4632; padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 600">Черновик</span></td><td class="td" style="text-align: right"><button style="padding: 7px 12px; background: #16201E; color: #EEF1EC; border: none; border-radius: 8px; cursor: pointer; font-size: 13px">Опубликовать</button></td></tr>
+        </table>
+      </div>
+    </main>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":900}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Наведение 2 с: предпросмотр события</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Inter:wght@400;500;600&display=swap">
+<style>
+body{margin:0}
+button{font:inherit}
+.fade{position: absolute; left: 0; right: 0; bottom: 0; height: 62%; backdrop-filter: blur(22px); -webkit-backdrop-filter: blur(22px); -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 45%); mask-image: linear-gradient(to bottom, transparent 0%, #000 45%)}
+.fade::after{content: ""; position: absolute; inset: 0; background: linear-gradient(to bottom, rgba(243,234,219,0) 0%, rgba(243,234,219,0.78) 100%)}
+</style>
+</helmet>
+<div style="width: 1280px; height: 900px; box-sizing: border-box; background: #2B2A27; color: #2E241D; font-family: Inter, sans-serif; position: relative; overflow: hidden">
+  <img src="/_blob/b27fbb0e17f4677f2c2f8fab04f192cd" alt="Статуя в пустом зале, голова в центре кадра" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 22%">
+  <div class="fade"></div>
+
+  <span style="position: absolute; top: 24px; right: 24px; background: #FFFFFF; padding: 8px 14px; border-radius: 999px; font-weight: 600; font-size: 14px; color: #16201E">45 PLN</span>
+
+  <div style="position: absolute; left: 48px; right: 48px; bottom: 40px; display: flex; flex-direction: column; gap: 14px">
+    <span style="font-size: 13px; color: #6E5A48">Галерея · сегодня 18:00 · Гданьск</span>
+    <h1 style="margin: 0; font-family: Fraunces, serif; font-weight: 600; font-size: 52px; line-height: 1.02; color: #16201E">Свет на мраморе: ночь в галерее</h1>
+    <p style="margin: 0; font-size: 16px; line-height: 1.55; max-width: 760px; color: #3A2F26">Вечерний обход зала скульптур при свете мансардного окна. Экскурсовод покажет, как меняется мрамор в течение дня.</p>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px; max-width: 760px; margin-top: 4px">
+      <div style="display: flex; flex-direction: column; gap: 6px"><span style="font-size: 12px; color: #6E5A48; text-transform: uppercase; letter-spacing: 1.2px">Для кого подойдёт</span><span style="font-size: 15px; color: #16201E">Любителям искусства, парам и тем, кто любит тихие вечера.</span></div>
+      <div style="display: flex; flex-direction: column; gap: 6px"><span style="font-size: 12px; color: #6E5A48; text-transform: uppercase; letter-spacing: 1.2px">Не подойдёт</span><span style="font-size: 15px; color: #16201E">Детям до 12 лет и тем, кому тяжело долго стоять.</span></div>
+    </div>
+    <div style="display: flex; gap: 10px; margin-top: 8px">
+      <button style="padding: 14px 22px; background: #16201E; color: #EEF1EC; border: none; border-radius: 12px; font-weight: 600; font-size: 15px; cursor: pointer">Открыть событие</button>
+      <button style="padding: 14px 18px; border: 1px solid #16201E; background: transparent; color: #16201E; border-radius: 12px; font-size: 15px; cursor: pointer">♡ В избранное</button>
+    </div>
+  </div>
+
+  <div style="position: absolute; right: 48px; top: 24px; background: #3A2C22; color: #F3E7D6; padding: 8px 14px; border-radius: 999px; font-size: 12px">Предпросмотр открывается через 2 секунды наведения</div>
+  <div style="position: absolute; left: 48px; top: 24px; background: rgba(255,255,255,0.7); color: #2E241D; padding: 8px 14px; border-radius: 999px; font-size: 12px">Уход курсора закрывает предпросмотр за 200 мс</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":900}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

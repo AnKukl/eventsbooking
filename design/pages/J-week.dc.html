@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Ход 5: Все события недели</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Inter:wght@400;500;600&display=swap">
+<style>
+body{margin:0}
+button{font:inherit}
+.day{background: #F4EAD9; border-radius: 16px; padding: 16px; box-sizing: border-box; color: #2E241D; display: flex; flex-direction: column; gap: 12px; box-shadow: 0 14px 24px rgba(20,12,6,0.3), inset 0 1px 0 rgba(255,255,255,0.7)}
+.ev{background: #FFFFFF; border-radius: 12px; padding: 12px; box-sizing: border-box; display: flex; flex-direction: column; gap: 4px; font-size: 13px}
+</style>
+</helmet>
+<div style="width: 1280px; height: 900px; box-sizing: border-box; padding: 32px 48px; background: linear-gradient(180deg, #F3EADB 0%, #E2CFB3 55%, #C9AE8C 100%); color: #2E241D; font-family: Inter, sans-serif; display: flex; flex-direction: column; gap: 20px">
+  <header style="display: flex; justify-content: space-between; align-items: center">
+    <a href="#" style="display: flex; align-items: center; gap: 12px; text-decoration: none; color: #2E241D"><svg width="40" height="40" viewBox="0 0 40 40" aria-hidden="true"><mask id="ebm-J"><rect width="40" height="40" rx="9" fill="#FFFFFF"/><circle cx="0" cy="20" r="4.5" fill="#000000"/><circle cx="40" cy="20" r="4.5" fill="#000000"/></mask><rect width="40" height="40" rx="9" fill="#B5563A" mask="url(#ebm-J)"/><rect x="13" y="11" width="3.2" height="18" fill="#F4EAD9"/><rect x="13" y="11" width="14" height="3.2" fill="#F4EAD9"/><rect x="13" y="18.4" width="11" height="3.2" fill="#F4EAD9"/><rect x="13" y="25.8" width="14" height="3.2" fill="#F4EAD9"/></svg><span style="font-family: Fraunces, serif; font-size: 24px; font-weight: 600">Events Booking</span></a>
+    <button style="display: flex; align-items: center; gap: 10px; padding: 8px 16px 8px 8px; border: none; background: #16201E; color: #EEF1EC; border-radius: 999px; font-weight: 600; font-size: 14px"><span style="width: 30px; height: 30px; border-radius: 50%; background: #E0533A; color: #16201E; display: flex; align-items: center; justify-content: center; font-size: 13px">А</span>Кабинет</button>
+  </header>
+
+  <div style="display: flex; justify-content: space-between; align-items: flex-end">
+    <div style="display: flex; flex-direction: column; gap: 6px">
+      <span style="font-size: 12px; color: #6B5440; text-transform: uppercase; letter-spacing: 1.5px">Неделя 17–23 ноября</span>
+      <h1 style="margin: 0; font-family: Fraunces, serif; font-weight: 600; font-size: 40px">Все события недели</h1>
+    </div>
+    <div style="display: flex; gap: 8px; font-size: 13px">
+      <button style="padding: 8px 14px; border-radius: 999px; border: none; background: #16201E; color: #EEF1EC; cursor: pointer">Неделя</button>
+      <button style="padding: 8px 14px; border-radius: 999px; border: 1px solid #2E241D; background: transparent; color: #2E241D; cursor: pointer">Выходные</button>
+      <button style="padding: 8px 14px; border-radius: 999px; border: 1px solid #2E241D; background: transparent; color: #2E241D; cursor: pointer">Бесплатно</button>
+    </div>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; flex: 1; align-content: start">
+    <div class="day">
+      <span style="font-family: Fraunces, serif; font-size: 22px">Вт 18</span>
+      <div class="ev"><b>12:00</b><span>Лекция о Балтике</span><span style="color: #6E5A48">Бесплатно · 3 места</span></div>
+      <div class="ev"><b>19:30</b><span>Джаз-трио, Grand Cafe</span><span style="color: #6E5A48">18 PLN · 12 мест</span></div>
+    </div>
+    <div class="day">
+      <span style="font-family: Fraunces, serif; font-size: 22px">Ср 19</span>
+      <div class="ev"><b>20:00</b><span>Кухня Pomorza</span><span style="color: #6E5A48">65 PLN · 40 мест</span></div>
+      <div class="ev"><b>21:00</b><span>Квиз-вечер, Stara Bramka</span><span style="color: #6E5A48">12 PLN · 24 места</span></div>
+    </div>
+    <div class="day">
+      <span style="font-family: Fraunces, serif; font-size: 22px">Чт 20</span>
+      <div class="ev"><b>18:00</b><span>Свет на мраморе</span><span style="color: #6E5A48">45 PLN · 14 мест</span></div>
+    </div>
+    <div class="day">
+      <span style="font-family: Fraunces, serif; font-size: 22px">Сб 22</span>
+      <div class="ev"><b>11:00</b><span>Мастер-класс по керамике</span><span style="color: #6E5A48">80 PLN · 6 мест</span></div>
+      <div class="ev"><b>21:00</b><span>Вечер джаза на вилле</span><span style="color: #6E5A48">45 PLN · 6 мест</span></div>
+    </div>
+  </div>
+
+  <div style="display: flex; justify-content: space-between; align-items: center; font-size: 14px; color: #5A4632">
+    <span>Показано 7 из 23 событий на неделе</span>
+    <button style="padding: 10px 16px; border: 1px solid #2E241D; background: transparent; color: #2E241D; border-radius: 10px; cursor: pointer">Показать ещё</button>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":900}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

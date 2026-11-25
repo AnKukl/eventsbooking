@@ -9,10 +9,10 @@ function Location() {
   return <div data-testid="location">{location.pathname + location.search}</div>
 }
 
-function renderHeader() {
+function renderHeader(initial?: string) {
   return render(
     <MemoryRouter initialEntries={['/']}>
-      <Header />
+      <Header initial={initial} />
       <Routes>
         <Route path="*" element={<Location />} />
       </Routes>
@@ -21,28 +21,37 @@ function renderHeader() {
 }
 
 describe('Header', () => {
-  it('shows the logo, the search and the cabinet button', () => {
+  it('renders the logo with the wordmark, the search and the cabinet button', () => {
     renderHeader()
 
-    expect(screen.getByRole('img', { name: 'Events Booking' })).toBeInTheDocument()
-    expect(screen.getByRole('searchbox', { name: 'Поиск мероприятий' })).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Кабинет' })).toHaveAttribute('href', '/organizer')
+    const home = screen.getByRole('link', { name: 'Events Booking, на главную' })
+    expect(home).toHaveAttribute('href', '/')
+    expect(home.querySelector('svg')).toHaveAttribute('width', '40')
+    expect(home).toHaveTextContent('Events Booking')
+    expect(screen.getByRole('searchbox', { name: 'Поиск мероприятий' }))
+      .toHaveAttribute('placeholder', 'Поиск: события, даты, настроение')
+    expect(screen.getByRole('link', { name: /Кабинет/ })).toHaveAttribute('href', '/account')
   })
 
-  it('draws the logo as a 40x40 mark with a four-part letter E', () => {
-    renderHeader()
+  it('shows the initial of the signed-in user in the avatar', () => {
+    renderHeader('анна')
 
-    const logo = screen.getByRole('img', { name: 'Events Booking' })
-    expect(logo).toHaveAttribute('width', '40')
-    expect(logo).toHaveAttribute('height', '40')
-    expect(logo.querySelectorAll('g > rect')).toHaveLength(4)
+    expect(screen.getByRole('link', { name: /Кабинет/ })).toHaveTextContent('АКабинет')
   })
 
-  it('searching goes to the catalogue with the trimmed query', async () => {
+  it('Enter in the search opens /search with the trimmed query', async () => {
     renderHeader()
 
     await userEvent.type(screen.getByRole('searchbox'), '  jazz night {enter}')
 
-    expect(screen.getByTestId('location')).toHaveTextContent('/?q=jazz%20night')
+    expect(screen.getByTestId('location')).toHaveTextContent('/search?q=jazz%20night')
+  })
+
+  it('an empty search goes nowhere', async () => {
+    renderHeader()
+
+    await userEvent.type(screen.getByRole('searchbox'), '   {enter}')
+
+    expect(screen.getByTestId('location')).toHaveTextContent(/^\/$/)
   })
 })

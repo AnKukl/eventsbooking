@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Кабинет: Уведомления</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Inter:wght@400;500;600&display=swap">
+<style>
+body{margin:0}
+button{font:inherit}
+.card{background: #F4EAD9; border-radius: 18px; padding: 20px 22px; box-sizing: border-box; color: #2E241D; box-shadow: 0 14px 24px rgba(20,12,6,0.35), 0 2px 4px rgba(20,12,6,0.2), inset 0 1px 0 rgba(255,255,255,0.7)}
+.note{display: grid; grid-template-columns: 14px 1fr auto; gap: 14px; align-items: start; padding: 14px 0; border-top: 1px solid #D9C7AE}
+.dot{width: 10px; height: 10px; border-radius: 50%; background: #B5563A; margin-top: 6px}
+.dot.read{background: transparent; border: 1px solid #9C8464}
+</style>
+</helmet>
+<div style="width: 1280px; height: 900px; box-sizing: border-box; padding: 32px 48px; background: linear-gradient(180deg, #F3EADB 0%, #E2CFB3 55%, #C9AE8C 100%); color: #2E241D; font-family: Inter, sans-serif; display: flex; flex-direction: column; gap: 22px">
+  <header style="display: flex; justify-content: space-between; align-items: center">
+    <a href="#" style="display: flex; align-items: center; gap: 12px; text-decoration: none; color: #2E241D"><svg width="40" height="40" viewBox="0 0 40 40" aria-hidden="true"><mask id="ebm-M"><rect width="40" height="40" rx="9" fill="#FFFFFF"/><circle cx="0" cy="20" r="4.5" fill="#000000"/><circle cx="40" cy="20" r="4.5" fill="#000000"/></mask><rect width="40" height="40" rx="9" fill="#B5563A" mask="url(#ebm-M)"/><rect x="13" y="11" width="3.2" height="18" fill="#F4EAD9"/><rect x="13" y="11" width="14" height="3.2" fill="#F4EAD9"/><rect x="13" y="18.4" width="11" height="3.2" fill="#F4EAD9"/><rect x="13" y="25.8" width="14" height="3.2" fill="#F4EAD9"/></svg><span style="font-family: Fraunces, serif; font-size: 24px; font-weight: 600">Events Booking</span></a>
+    <a href="#" style="display: flex; align-items: center; gap: 10px; padding: 8px 16px 8px 8px; background: #E8D9C0; color: #2E241D; border-radius: 999px; font-weight: 600; font-size: 14px; text-decoration: none"><span style="width: 30px; height: 30px; border-radius: 50%; background: #D9C7AE; display: flex; align-items: center; justify-content: center"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M2 7.5 8 2.5l6 5V14h-4v-4H6v4H2z" fill="#2E241D"/></svg></span>Главная</a>
+  </header>
+
+  <div style="display: grid; grid-template-columns: 220px 1fr; gap: 24px; flex: 1">
+    <nav style="display: flex; flex-direction: column; gap: 6px">
+      <button style="text-align: left; padding: 12px 14px; border: none; border-radius: 12px; background: transparent; color: #2E241D; font-size: 15px">Мои брони</button>
+      <button style="text-align: left; padding: 12px 14px; border: none; border-radius: 12px; background: transparent; color: #2E241D; font-size: 15px">Избранное · 4</button>
+      <button style="text-align: left; padding: 12px 14px; border: none; border-radius: 12px; background: transparent; color: #2E241D; font-size: 15px">Профиль</button>
+      <button style="text-align: left; padding: 12px 14px; border: none; border-radius: 12px; background: #3A2C22; color: #F4EAD9; font-weight: 600; font-size: 15px">Уведомления · 3</button>
+      <button style="margin-top: auto; text-align: left; padding: 12px 14px; border: none; border-radius: 12px; background: transparent; color: #B5563A; font-size: 15px">Выйти</button>
+    </nav>
+
+    <main style="display: grid; grid-template-columns: 1fr 300px; gap: 18px; min-width: 0; align-content: start">
+      <div class="card" style="display: flex; flex-direction: column">
+        <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 6px">
+          <h1 style="margin: 0; font-family: Fraunces, serif; font-weight: 600; font-size: 34px">Уведомления</h1>
+          <button style="padding: 8px 14px; border: 1px solid #2E241D; background: transparent; color: #2E241D; border-radius: 10px; cursor: pointer; font-size: 13px">Отметить все прочитанными</button>
+        </div>
+
+        <span style="font-size: 12px; color: #6E5A48; text-transform: uppercase; letter-spacing: 1.2px; margin-top: 10px">Сегодня</span>
+        <div class="note"><span class="dot"></span><span style="font-size: 15px"><b>Через 2 часа джаз-трио</b><br><span style="font-size: 13px; color: #6E5A48">Grand Cafe, 19:30 · ряд 2, места 4 и 5</span></span><span style="font-size: 12px; color: #6E5A48">14:00</span></div>
+        <div class="note"><span class="dot"></span><span style="font-size: 15px"><b>Оплата прошла</b><br><span style="font-size: 13px; color: #6E5A48">Свет на мраморе · 2 билета, 90 PLN</span></span><span style="font-size: 12px; color: #6E5A48">11:20</span></div>
+
+        <span style="font-size: 12px; color: #6E5A48; text-transform: uppercase; letter-spacing: 1.2px; margin-top: 10px">Вчера</span>
+        <div class="note"><span class="dot read"></span><span style="font-size: 15px"><b>Освободилось место</b><br><span style="font-size: 13px; color: #6E5A48">Кухня Pomorza, дегустация · 1 место</span></span><span style="font-size: 12px; color: #6E5A48">18:45</span></div>
+        <div class="note" style="border-bottom: 1px solid #D9C7AE"><span class="dot read"></span><span style="font-size: 15px"><b>Время изменено</b><br><span style="font-size: 13px; color: #6E5A48">Лекция о Балтике перенесена на 12:30</span></span><span style="font-size: 12px; color: #6E5A48">09:10</span></div>
+      </div>
+
+      <aside class="card" style="display: flex; flex-direction: column; gap: 14px">
+        <span style="font-family: Fraunces, serif; font-size: 22px">Что присылать</span>
+        <div style="display: flex; justify-content: space-between; font-size: 15px"><span>Напоминания о событии</span><span style="width: 42px; height: 24px; border-radius: 999px; background: #16201E; position: relative"><span style="position: absolute; right: 3px; top: 3px; width: 18px; height: 18px; border-radius: 50%; background: #F4EAD9"></span></span></div>
+        <div style="display: flex; justify-content: space-between; font-size: 15px"><span>Изменения времени и мест</span><span style="width: 42px; height: 24px; border-radius: 999px; background: #16201E; position: relative"><span style="position: absolute; right: 3px; top: 3px; width: 18px; height: 18px; border-radius: 50%; background: #F4EAD9"></span></span></div>
+        <div style="display: flex; justify-content: space-between; font-size: 15px"><span>Новые события рядом</span><span style="width: 42px; height: 24px; border-radius: 999px; background: #C9B497; position: relative"><span style="position: absolute; left: 3px; top: 3px; width: 18px; height: 18px; border-radius: 50%; background: #FFFFFF"></span></span></div>
+        <span style="font-size: 12px; color: #6E5A48; margin-top: auto">Важные сообщения о брони приходят в любом случае, даже если вы отключили остальные.</span>
+      </aside>
+    </main>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":900}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

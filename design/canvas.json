@@ -1,0 +1,164 @@
+{
+  "v": 3,
+  "attachments": {},
+  "boards": {
+    "D-bento.dc.html": {
+      "h": 900,
+      "title": "Концепция D: Bento и стекло",
+      "w": 1280,
+      "x": 0,
+      "y": 2140
+    },
+    "E-buttons.dc.html": {
+      "h": 900,
+      "title": "Кнопки главного меню: состояния и переходы",
+      "w": 1280,
+      "x": 1360,
+      "y": 2140
+    },
+    "F-account.dc.html": {
+      "h": 900,
+      "title": "Ход 1 · Кабинет",
+      "w": 1280,
+      "x": 0,
+      "y": 3160
+    },
+    "G-search.dc.html": {
+      "h": 900,
+      "title": "Ход 2 · Поиск",
+      "w": 1280,
+      "x": 1360,
+      "y": 3160
+    },
+    "H-map.dc.html": {
+      "h": 900,
+      "title": "Ход 3 · Карта",
+      "w": 1280,
+      "x": 2720,
+      "y": 3160
+    },
+    "I-booking.dc.html": {
+      "h": 900,
+      "title": "Ход 4 · Бронирование",
+      "w": 1280,
+      "x": 0,
+      "y": 4280
+    },
+    "J-week.dc.html": {
+      "h": 900,
+      "title": "Ход 5 · Все события",
+      "w": 1280,
+      "x": 1360,
+      "y": 4280
+    },
+    "K-favorites.dc.html": {
+      "h": 900,
+      "title": "Кабинет · Избранное",
+      "w": 1280,
+      "x": 2720,
+      "y": 4280
+    },
+    "L-profile.dc.html": {
+      "h": 900,
+      "title": "Кабинет · Профиль",
+      "w": 1280,
+      "x": 0,
+      "y": 5400
+    },
+    "M-notifications.dc.html": {
+      "h": 900,
+      "title": "Кабинет · Уведомления",
+      "w": 1280,
+      "x": 1360,
+      "y": 5400
+    },
+    "O-event.dc.html": {
+      "h": 900,
+      "title": "Событие: карточка и избранное",
+      "w": 1280,
+      "x": 0,
+      "y": 6520
+    },
+    "R-hover.dc.html": {
+      "h": 900,
+      "title": "Наведение 2 с · предпросмотр",
+      "w": 1280,
+      "x": 1360,
+      "y": 6520
+    },
+    "P-modals.dc.html": {
+      "h": 900,
+      "title": "Модальные окна и всплывающие сообщения",
+      "w": 1280,
+      "x": 2720,
+      "y": 6520
+    },
+    "S-auth.dc.html": {
+      "h": 900,
+      "title": "Вход и регистрация",
+      "w": 1280,
+      "x": 0,
+      "y": 7640
+    },
+    "T-organizer.dc.html": {
+      "h": 900,
+      "title": "Кабинет организатора",
+      "w": 1280,
+      "x": 1360,
+      "y": 7640
+    },
+    "U-editor.dc.html": {
+      "h": 900,
+      "title": "Редактор события",
+      "w": 1280,
+      "x": 2720,
+      "y": 7640
+    },
+    "Payments.dc.html": {
+      "h": 900,
+      "title": "Оплата: путь пользователя",
+      "w": 1280,
+      "x": 1360,
+      "y": 1120
+    }
+  },
+  "createdOnFiles": {
+    "at": "2026-11-17T09:00:00Z",
+    "v": 1
+  },
+  "designSystems": [],
+  "launch": {
+    "view": "canvas"
+  },
+  "notes": {
+    "title1": {
+      "kind": "title1",
+      "maxW": 3999,
+      "text": "Events Booking: первая страница, три концепции и оплата",
+      "w": 240,
+      "x": 0,
+      "y": -260
+    }
+  },
+  "order": [
+    "D-bento.dc.html",
+    "E-buttons.dc.html",
+    "F-account.dc.html",
+    "G-search.dc.html",
+    "H-map.dc.html",
+    "I-booking.dc.html",
+    "J-week.dc.html",
+    "K-favorites.dc.html",
+    "L-profile.dc.html",
+    "M-notifications.dc.html",
+    "O-event.dc.html",
+    "R-hover.dc.html",
+    "P-modals.dc.html",
+    "S-auth.dc.html",
+    "T-organizer.dc.html",
+    "U-editor.dc.html",
+    "Payments.dc.html"
+  ],
+  "pages": [],
+  "title": "Events Booking: концепции первой страницы и дизайн"
+}

@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Оплата: путь пользователя</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Inter:wght@400;500;600&display=swap">
+<style>
+body{margin:0}
+button{font:inherit}
+</style>
+</helmet>
+<div style="width: 1280px; height: 900px; box-sizing: border-box; padding: 48px 64px; background: #F5F0E8; color: #1C1B19; font-family: Inter, sans-serif; display: flex; flex-direction: column; gap: 30px">
+  <div style="display: flex; flex-direction: column; gap: 8px">
+    <h1 style="margin: 0; font-family: Fraunces, serif; font-weight: 600; font-size: 40px">Оплата: от выбора мест до билета</h1>
+    <p style="margin: 0; font-size: 15px; color: #6B665C">Второстепенная тема, но её состояния влияют на интерфейс. Платёжный провайдер подключается позже, структура экранов уже готова.</p>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px">
+    <div style="background: #FFFFFF; border: 1px solid #D9D2C5; border-radius: 14px; padding: 20px; display: flex; flex-direction: column; gap: 10px">
+      <span style="font-size: 12px; color: #1E6B66; font-weight: 600">1 · Резерв</span>
+      <span style="font-size: 18px; font-weight: 600">Места удержаны 10 минут</span>
+      <span style="font-size: 14px; color: #4A463F; line-height: 1.45">Таймер на экране оплаты. Истёк срок: бронь переходит в статус «истекла», места возвращаются в продажу.</span>
+    </div>
+    <div style="background: #FFFFFF; border: 1px solid #D9D2C5; border-radius: 14px; padding: 20px; display: flex; flex-direction: column; gap: 10px">
+      <span style="font-size: 12px; color: #1E6B66; font-weight: 600">2 · Способ</span>
+      <span style="font-size: 18px; font-weight: 600">BLIK, карта, Przelewy24</span>
+      <span style="font-size: 14px; color: #4A463F; line-height: 1.45">Для Польши BLIK и Przelewy24 важнее карты. Кнопка «Оплатить 36 PLN» одна, способ выбирается выше.</span>
+    </div>
+    <div style="background: #FFFFFF; border: 1px solid #D9D2C5; border-radius: 14px; padding: 20px; display: flex; flex-direction: column; gap: 10px">
+      <span style="font-size: 12px; color: #1E6B66; font-weight: 600">3 · Подтверждение</span>
+      <span style="font-size: 18px; font-weight: 600">Ждём webhook, а не редирект</span>
+      <span style="font-size: 14px; color: #4A463F; line-height: 1.45">Страница «Ожидаем оплату» опрашивает статус. Бронь становится «оплачена» только после подтверждения сервера.</span>
+    </div>
+    <div style="background: #FFFFFF; border: 1px solid #D9D2C5; border-radius: 14px; padding: 20px; display: flex; flex-direction: column; gap: 10px">
+      <span style="font-size: 12px; color: #1E6B66; font-weight: 600">4 · Билет</span>
+      <span style="font-size: 18px; font-weight: 600">QR и письмо</span>
+      <span style="font-size: 14px; color: #4A463F; line-height: 1.45">Экран «Мои брони» показывает QR. Копия приходит на email и в уведомления.</span>
+    </div>
+  </div>
+
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; flex: 1">
+    <div style="background: #FFFFFF; border: 1px solid #D9D2C5; border-radius: 16px; padding: 28px; display: flex; flex-direction: column; gap: 16px">
+      <span style="font-size: 14px; color: #6B665C">Экран оплаты</span>
+      <div style="display: flex; justify-content: space-between; font-size: 15px"><span>Джаз-трио, 2 места</span><span>36 PLN</span></div>
+      <div style="display: flex; gap: 8px">
+        <button style="flex: 1; padding: 14px; border: 2px solid #1E6B66; background: #E8F1EF; border-radius: 10px; font-weight: 600; cursor: pointer">BLIK</button>
+        <button style="flex: 1; padding: 14px; border: 1px solid #C9C1B2; background: transparent; border-radius: 10px; cursor: pointer">Przelewy24</button>
+        <button style="flex: 1; padding: 14px; border: 1px solid #C9C1B2; background: transparent; border-radius: 10px; cursor: pointer">Карта</button>
+      </div>
+      <div style="font-size: 14px; color: #E0533A; font-weight: 600">Места удержаны: 08:42</div>
+      <button style="margin-top: auto; padding: 16px; background: #1C1B19; color: #F5F0E8; border: none; border-radius: 10px; font-weight: 600; font-size: 16px; cursor: pointer">Оплатить 36 PLN</button>
+    </div>
+
+    <div style="background: #FFFFFF; border: 1px solid #D9D2C5; border-radius: 16px; padding: 28px; display: flex; flex-direction: column; gap: 14px">
+      <span style="font-size: 14px; color: #6B665C">Состояния, которые нужно нарисовать</span>
+      <div style="font-size: 15px; line-height: 1.5; display: flex; flex-direction: column; gap: 10px">
+        <p style="margin: 0"><b>Ожидаем оплату</b>: спиннер и текст «Подтверждаем платёж, обычно это занимает несколько секунд».</p>
+        <p style="margin: 0"><b>Оплачено</b>: билет и кнопка «Добавить в календарь».</p>
+        <p style="margin: 0"><b>Отклонено</b>: причина простым языком и кнопка «Попробовать другой способ», места ещё удержаны.</p>
+        <p style="margin: 0"><b>Истекло время</b>: места возвращены, кнопка «Выбрать места снова».</p>
+        <p style="margin: 0"><b>Мест больше нет</b>: при оплате место ушло другому, деньги не списываются, предлагаем альтернативу.</p>
+      </div>
+      <p style="margin: auto 0 0; font-size: 13px; color: #6B665C">Провайдер и сумма пока условные. Перед подключением уточните комиссии и ограничения BLIK для вашего аккаунта.</p>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":900}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

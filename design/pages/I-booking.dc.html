@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Ход 4: Бронирование</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Inter:wght@400;500;600&display=swap">
+<style>
+body{margin:0}
+button{font:inherit}
+.card{background: #F4EAD9; border-radius: 18px; padding: 22px; box-sizing: border-box; color: #2E241D; box-shadow: 0 14px 24px rgba(20,12,6,0.35), 0 2px 4px rgba(20,12,6,0.2), inset 0 1px 0 rgba(255,255,255,0.7)}
+</style>
+</helmet>
+<div style="width: 1280px; height: 900px; box-sizing: border-box; padding: 32px 48px; background: linear-gradient(180deg, #F3EADB 0%, #E2CFB3 55%, #C9AE8C 100%); color: #2E241D; font-family: Inter, sans-serif; display: flex; flex-direction: column; gap: 22px">
+  <header style="display: flex; justify-content: space-between; align-items: center">
+    <a href="#" style="display: flex; align-items: center; gap: 12px; text-decoration: none; color: #2E241D"><svg width="40" height="40" viewBox="0 0 40 40" aria-hidden="true"><mask id="ebm-I"><rect width="40" height="40" rx="9" fill="#FFFFFF"/><circle cx="0" cy="20" r="4.5" fill="#000000"/><circle cx="40" cy="20" r="4.5" fill="#000000"/></mask><rect width="40" height="40" rx="9" fill="#B5563A" mask="url(#ebm-I)"/><rect x="13" y="11" width="3.2" height="18" fill="#F4EAD9"/><rect x="13" y="11" width="14" height="3.2" fill="#F4EAD9"/><rect x="13" y="18.4" width="11" height="3.2" fill="#F4EAD9"/><rect x="13" y="25.8" width="14" height="3.2" fill="#F4EAD9"/></svg><span style="font-family: Fraunces, serif; font-size: 24px; font-weight: 600">Events Booking</span></a>
+    <span style="font-size: 14px; color: #5A4632">Назад к событию</span>
+  </header>
+
+  <div style="display: grid; grid-template-columns: 1fr 440px; gap: 24px; flex: 1">
+    <div style="display: flex; flex-direction: column; gap: 18px">
+      <div style="position: relative; height: 330px; border-radius: 22px; overflow: hidden; box-shadow: 0 14px 24px rgba(20,12,6,0.35)">
+        <img src="/_blob/b27fbb0e17f4677f2c2f8fab04f192cd" alt="Статуя в пустом зале" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover">
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 6px">
+        <span style="font-size: 12px; color: #B5563A; font-weight: 600">Галерея · сегодня 18:00</span>
+        <h1 style="margin: 0; font-family: Fraunces, serif; font-weight: 600; font-size: 42px; line-height: 1.05">Свет на мраморе: ночь в галерее</h1>
+        <span style="font-size: 15px; color: #5A4632">Национальный музей, Гданьск · 1 час 30 минут · 14 мест осталось</span>
+      </div>
+      <div style="margin-top: 4px; display: flex; flex-direction: column; gap: 16px; color: #7A4A32">
+        <p style="margin: 0; font-size: 15px; line-height: 1.55">Вечерний обход галереи при свете мансардного окна: экскурсовод проведёт по залу скульптур и расскажет, как менялось освещение мрамора в течение дня. Группа до 12 человек, маршрут занимает около полутора часов.</p>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px 22px; font-size: 14px; border-top: 1px solid #D9C7AE; padding-top: 14px">
+          <div><div style="font-size: 12px; color: #6E5A48; text-transform: uppercase; letter-spacing: 1px">Язык</div>Польский, английский</div>
+          <div><div style="font-size: 12px; color: #6E5A48; text-transform: uppercase; letter-spacing: 1px">Возраст</div>12+</div>
+          <div><div style="font-size: 12px; color: #6E5A48; text-transform: uppercase; letter-spacing: 1px">Сбор гостей</div>Холл музея, за 10 минут</div>
+          <div><div style="font-size: 12px; color: #6E5A48; text-transform: uppercase; letter-spacing: 1px">Доступность</div>Лифт и пандус</div>
+        </div>
+        <div style="font-size: 13px; color: #6E5A48; border-top: 1px solid #D9C7AE; padding-top: 12px">С собой: ничего, кроме документа для входа. Фотографировать без вспышки можно везде, кроме зала с фарфором.</div>
+      </div>
+    </div>
+
+    <aside class="card" style="display: flex; flex-direction: column; gap: 18px">
+      <span style="font-size: 12px; color: #6E5A48; text-transform: uppercase; letter-spacing: 1.2px">Выбор мест</span>
+      <div style="display: flex; justify-content: space-between; align-items: center">
+        <span style="font-size: 16px; font-weight: 600">Количество билетов</span>
+        <div style="display: flex; align-items: center; gap: 14px">
+          <button style="width: 40px; height: 40px; border-radius: 50%; border: 1px solid #2E241D; background: transparent; font-size: 18px; cursor: pointer">−</button>
+          <span style="font-size: 20px; font-weight: 600; min-width: 20px; text-align: center">2</span>
+          <button style="width: 40px; height: 40px; border-radius: 50%; border: none; background: #16201E; color: #EEF1EC; font-size: 18px; cursor: pointer">+</button>
+        </div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 10px; padding: 16px 0; border-top: 1px solid #D9C7AE; border-bottom: 1px solid #D9C7AE; font-size: 15px">
+        <div style="display: flex; justify-content: space-between"><span>Билет × 2</span><span>90 PLN</span></div>
+        <div style="display: flex; justify-content: space-between; color: #6E5A48; font-size: 13px"><span>Сбор сервиса</span><span>включён</span></div>
+      </div>
+      <div style="display: flex; justify-content: space-between; align-items: baseline"><span style="font-size: 16px">Итого</span><span style="font-family: Fraunces, serif; font-size: 32px">90 PLN</span></div>
+      <div style="padding: 12px 14px; border-radius: 12px; background: #3A2C22; color: #F3E7D6; font-size: 14px; display: flex; justify-content: space-between"><span>Места удержаны</span><span style="font-weight: 600; color: #E9A07F">09:42</span></div>
+      <button style="margin-top: auto; padding: 16px; background: #16201E; color: #EEF1EC; border: none; border-radius: 12px; font-weight: 600; font-size: 16px; cursor: pointer">Перейти к оплате · 90 PLN</button>
+      <span style="font-size: 12px; color: #6E5A48; text-align: center">Отмена бесплатна до 24 часов до начала</span>
+    </aside>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":900}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

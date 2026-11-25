@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Событие: карточка и избранное</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Inter:wght@400;500;600&display=swap">
+<style>
+body{margin:0}
+button{font:inherit}
+.card{background: #F4EAD9; border-radius: 18px; padding: 22px; box-sizing: border-box; color: #2E241D; box-shadow: 0 14px 24px rgba(20,12,6,0.35), 0 2px 4px rgba(20,12,6,0.2), inset 0 1px 0 rgba(255,255,255,0.7)}
+.chip{padding: 6px 12px; border-radius: 999px; background: #E8D9C0; font-size: 13px; color: #2E241D}
+</style>
+</helmet>
+<div style="width: 1280px; height: 900px; box-sizing: border-box; padding: 32px 48px; background: linear-gradient(180deg, #F3EADB 0%, #E2CFB3 55%, #C9AE8C 100%); color: #2E241D; font-family: Inter, sans-serif; display: flex; flex-direction: column; gap: 22px">
+  <header style="display: flex; justify-content: space-between; align-items: center">
+    <span style="display: flex; align-items: center; gap: 12px"><svg width="40" height="40" viewBox="0 0 40 40" aria-hidden="true"><mask id="ebm-O"><rect width="40" height="40" rx="9" fill="#FFFFFF"/><circle cx="0" cy="20" r="4.5" fill="#000000"/><circle cx="40" cy="20" r="4.5" fill="#000000"/></mask><rect width="40" height="40" rx="9" fill="#B5563A" mask="url(#ebm-O)"/><rect x="13" y="11" width="3.2" height="18" fill="#F4EAD9"/><rect x="13" y="11" width="14" height="3.2" fill="#F4EAD9"/><rect x="13" y="18.4" width="11" height="3.2" fill="#F4EAD9"/><rect x="13" y="25.8" width="14" height="3.2" fill="#F4EAD9"/></svg><span style="font-family: Fraunces, serif; font-size: 24px; font-weight: 600">Events Booking</span></span>
+    <span style="font-size: 14px; color: #5A4632">← Все события</span>
+  </header>
+
+  <div style="display: grid; grid-template-columns: 1.15fr 1fr; gap: 24px; flex: 1">
+    <div style="position: relative; border-radius: 22px; overflow: hidden; box-shadow: 0 14px 24px rgba(20,12,6,0.35)">
+      <img src="/_blob/b27fbb0e17f4677f2c2f8fab04f192cd" alt="Статуя в пустом зале" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover">
+      <span style="position: absolute; left: 16px; top: 16px; background: #FFFFFF; padding: 6px 12px; border-radius: 999px; font-size: 12px; font-weight: 600">Осталось 14 мест</span>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 16px">
+      <span style="font-size: 12px; color: #B5563A; font-weight: 600">Галерея · сегодня 18:00</span>
+      <h1 style="margin: 0; font-family: Fraunces, serif; font-weight: 600; font-size: 40px; line-height: 1.05">Свет на мраморе: ночь в галерее</h1>
+      <div style="display: flex; gap: 8px; flex-wrap: wrap"><span class="chip">Искусство</span><span class="chip">1 ч 30 мин</span><span class="chip">12+</span><span class="chip">Гданьск</span></div>
+
+      <div style="display: flex; gap: 10px; align-items: center">
+        <button aria-pressed="true" aria-label="Убрать из избранного" style="display: flex; align-items: center; gap: 8px; padding: 12px 16px; border-radius: 12px; border: 1px solid #B5563A; background: #F4EAD9; color: #B5563A; font-weight: 600; cursor: pointer">♥ В избранном</button>
+        <button style="padding: 12px 16px; border-radius: 12px; border: 1px solid #2E241D; background: transparent; color: #2E241D; cursor: pointer">Поделиться</button>
+        <button style="padding: 12px 16px; border-radius: 12px; border: 1px solid #2E241D; background: transparent; color: #2E241D; cursor: pointer">На карте</button>
+      </div>
+
+      <div class="card" style="display: flex; flex-direction: column; gap: 14px; margin-top: 4px">
+        <div style="display: flex; justify-content: space-between; align-items: baseline"><span style="font-size: 15px">Билет за место</span><span style="font-family: Fraunces, serif; font-size: 30px">45 PLN</span></div>
+        <div style="display: flex; gap: 10px">
+          <button style="flex: 1; padding: 14px; background: #16201E; color: #EEF1EC; border: none; border-radius: 12px; font-weight: 600; font-size: 16px; cursor: pointer">Забронировать</button>
+        </div>
+        <span style="font-size: 12px; color: #6E5A48">Отмена бесплатна до 24 часов до начала</span>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 6px; font-size: 14px; color: #4A3B2C; border-top: 1px solid #C9B497; padding-top: 14px">
+        <span><b>Для кого:</b> любителей искусства и тех, кто любит тихие вечера в музее.</span>
+        <span><b>Сбор:</b> холл музея, за 10 минут до начала.</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="position: absolute; left: 50%; bottom: 28px; transform: translateX(-50%); background: #3A2C22; color: #F3E7D6; padding: 12px 18px; border-radius: 12px; font-size: 14px; display: flex; gap: 18px; align-items: center; box-shadow: 0 10px 20px rgba(20,12,6,0.4)">Сохранено в избранное <span style="color: #E9A07F; font-weight: 600">Отменить</span></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":900}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

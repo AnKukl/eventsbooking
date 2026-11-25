@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Концепция E: кнопки навигации</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Inter:wght@400;500;600&display=swap">
+<style>
+body{margin:0}
+button{font:inherit}
+.card{background: #F4EAD9; border-radius: 18px; padding: 22px; box-sizing: border-box; color: #2E241D; display: flex; flex-direction: column; gap: 14px; box-shadow: 0 14px 24px rgba(20,12,6,0.4), 0 2px 4px rgba(20,12,6,0.25), inset 0 1px 0 rgba(255,255,255,0.7)}
+.lbl{font-size: 12px; color: #6E5A48; text-transform: uppercase; letter-spacing: 1.2px}
+.row{display: flex; gap: 10px; align-items: center; flex-wrap: wrap}
+.st{font-size: 11px; color: #6E5A48; display: flex; flex-direction: column; gap: 6px; align-items: flex-start}
+</style>
+</helmet>
+<div style="width: 1280px; height: 900px; box-sizing: border-box; padding: 36px 48px; background: linear-gradient(180deg, #F3EADB 0%, #E2CFB3 55%, #C9AE8C 100%); color: #2E241D; font-family: Inter, sans-serif; display: flex; flex-direction: column; gap: 22px">
+  <div style="display: flex; justify-content: space-between; align-items: flex-end">
+    <div style="display: flex; flex-direction: column; gap: 6px">
+      <span style="font-size: 12px; color: #6B5440; text-transform: uppercase; letter-spacing: 1.5px">Главное меню</span>
+      <h1 style="margin: 0; font-family: Fraunces, serif; font-weight: 600; font-size: 40px; color: #2E241D">Кнопки и их переходы</h1>
+    </div>
+    <span style="font-size: 13px; color: #5A4632">Каждая кнопка: обычное, наведение, фокус клавиатурой, неактивное</span>
+  </div>
+
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px; flex: 1">
+    <div class="card">
+      <span class="lbl">1 · Шапка</span>
+      <span style="font-family: Fraunces, serif; font-size: 24px">Кабинет</span>
+      <div class="row">
+        <div class="st">Обычное<button style="display: flex; align-items: center; gap: 10px; padding: 8px 16px 8px 8px; border: none; background: #16201E; color: #EEF1EC; border-radius: 999px; cursor: pointer; font-weight: 600; font-size: 14px"><span style="width: 30px; height: 30px; border-radius: 50%; background: #E0533A; color: #16201E; display: flex; align-items: center; justify-content: center; font-size: 13px">А</span>Кабинет</button></div>
+        <div class="st">Наведение<button style="display: flex; align-items: center; gap: 10px; padding: 8px 16px 8px 8px; border: none; background: #B5563A; color: #F4EAD9; border-radius: 999px; cursor: pointer; font-weight: 600; font-size: 14px"><span style="width: 30px; height: 30px; border-radius: 50%; background: #F4EAD9; color: #B5563A; display: flex; align-items: center; justify-content: center; font-size: 13px">А</span>Кабинет</button></div>
+        <div class="st">Фокус<button style="display: flex; align-items: center; gap: 10px; padding: 8px 16px 8px 8px; border: 3px solid #B5563A; outline: 2px solid #F4EAD9; background: #16201E; color: #EEF1EC; border-radius: 999px; cursor: pointer; font-weight: 600; font-size: 14px"><span style="width: 30px; height: 30px; border-radius: 50%; background: #E0533A; color: #16201E; display: flex; align-items: center; justify-content: center; font-size: 13px">А</span>Кабинет</button></div>
+      </div>
+      <span style="font-size: 14px; line-height: 1.5"><b>Переход:</b> /account. Гость, нажав кнопку, видит окно входа с полями email и пароль и кнопкой «Войти», а после входа возвращается туда, откуда пришёл.</span>
+    </div>
+
+    <div class="card">
+      <span class="lbl">2 · Шапка</span>
+      <span style="font-family: Fraunces, serif; font-size: 24px">Поиск</span>
+      <div class="row">
+        <div class="st">Пустой<div style="display: flex; align-items: center; padding: 10px 16px; border-radius: 999px; background: #FFFFFF; border: 1px solid #D9C7AE; font-size: 14px; color: #6E5A48; width: 240px; box-sizing: border-box">Поиск: события, даты</div></div>
+        <div class="st">Фокус<div style="display: flex; align-items: center; padding: 10px 16px; border-radius: 999px; background: #FFFFFF; border: 2px solid #B5563A; font-size: 14px; color: #2E241D; width: 240px; box-sizing: border-box">джаз</div></div>
+      </div>
+      <span style="font-size: 14px; line-height: 1.5"><b>Переход:</b> /search?q=… по Enter. Подсказки появляются после двух символов, и каждая ведёт на карточку события.</span>
+    </div>
+
+    <div class="card">
+      <span class="lbl">3 · Блок «Сегодня рядом»</span>
+      <span style="font-family: Fraunces, serif; font-size: 24px">Открыть карту</span>
+      <div class="row">
+        <div class="st">Обычное<button style="padding: 12px 18px; border: 1px solid #2E241D; background: transparent; color: #2E241D; border-radius: 10px; cursor: pointer; font-size: 14px">Открыть карту</button></div>
+        <div class="st">Наведение<button style="padding: 12px 18px; border: 1px solid #2E241D; background: #2E241D; color: #F4EAD9; border-radius: 10px; cursor: pointer; font-size: 14px">Открыть карту</button></div>
+      </div>
+      <span style="font-size: 14px; line-height: 1.5"><b>Переход:</b> /map. Карта открывается с событиями на сегодня, а если геолокация запрещена, центр ставится на Сопот.</span>
+    </div>
+
+    <div class="card">
+      <span class="lbl">4 · Карточка события</span>
+      <span style="font-family: Fraunces, serif; font-size: 24px">Забронировать</span>
+      <div class="row">
+        <div class="st">Обычное<button style="padding: 12px 18px; background: #16201E; color: #EEF1EC; border: none; border-radius: 10px; font-weight: 600; cursor: pointer; font-size: 14px">Забронировать</button></div>
+        <div class="st">Наведение<button style="padding: 12px 18px; background: #B5563A; color: #F4EAD9; border: none; border-radius: 10px; font-weight: 600; cursor: pointer; font-size: 14px">Забронировать</button></div>
+        <div class="st">Нет мест<button disabled style="padding: 12px 18px; background: #D9C7AE; color: #6E5A48; border: none; border-radius: 10px; font-weight: 600; cursor: not-allowed; font-size: 14px">Мест нет</button></div>
+      </div>
+      <span style="font-size: 14px; line-height: 1.5"><b>Переход:</b> /events/:id/booking, где выбирается количество мест. Когда мест нет, кнопка неактивна и рядом предлагается «Сообщить, когда появятся».</span>
+    </div>
+
+    <div class="card" style="grid-column: 1 / span 2; flex-direction: row; align-items: center; justify-content: space-between">
+      <div style="display: flex; flex-direction: column; gap: 8px; max-width: 520px">
+        <span class="lbl">5 · Заголовок раздела «Скоро»</span>
+        <span style="font-family: Fraunces, serif; font-size: 24px">Все события →</span>
+        <span style="font-size: 14px; line-height: 1.5"><b>Переход:</b> /events?when=week. Ссылка в тёмном блоке остаётся светлой и подчёркивается при наведении, чтобы не пропадать на коричневом фоне.</span>
+      </div>
+      <div class="row" style="gap: 14px">
+        <div class="st">Обычное<span style="font-size: 14px; color: #CDB79C; background: #3A2C22; padding: 10px 14px; border-radius: 8px">Все события →</span></div>
+        <div class="st">Наведение<span style="font-size: 14px; color: #F3E7D6; background: #3A2C22; padding: 10px 14px; border-radius: 8px; text-decoration: underline">Все события →</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":900}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Модальные окна</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Inter:wght@400;500;600&display=swap">
+<style>
+body{margin:0}
+button{font:inherit}
+.scrim{background: rgba(40,28,18,0.45); border-radius: 18px; padding: 22px; box-sizing: border-box; position: relative; display: flex; align-items: center; justify-content: center}
+.modal{background: #F4EAD9; border-radius: 20px; padding: 26px; box-sizing: border-box; width: 100%; max-width: 480px; color: #2E241D; display: flex; flex-direction: column; gap: 14px; box-shadow: 0 20px 40px rgba(20,12,6,0.45)}
+.input{padding: 12px 14px; border-radius: 10px; border: 1px solid #C9B497; background: #FFFFFF; font: inherit; font-size: 15px; box-sizing: border-box; width: 100%}
+.lbl{font-size: 12px; color: #6E5A48; text-transform: uppercase; letter-spacing: 1.2px}
+</style>
+</helmet>
+<div style="width: 1280px; height: 900px; box-sizing: border-box; padding: 32px 48px; background: linear-gradient(180deg, #F3EADB 0%, #E2CFB3 55%, #C9AE8C 100%); color: #2E241D; font-family: Inter, sans-serif; display: flex; flex-direction: column; gap: 20px">
+  <div style="display: flex; justify-content: space-between; align-items: flex-end">
+    <div style="display: flex; flex-direction: column; gap: 6px">
+      <span style="font-size: 12px; color: #6B5440; text-transform: uppercase; letter-spacing: 1.5px">Всплывающие окна</span>
+      <h1 style="margin: 0; font-family: Fraunces, serif; font-weight: 600; font-size: 40px">Окна, которые открываются поверх экрана</h1>
+    </div>
+    <span style="font-size: 13px; color: #5A4632">Фон затемняется, фокус уходит в окно, Esc закрывает</span>
+  </div>
+
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px; flex: 1">
+    <div class="scrim">
+      <div class="modal">
+        <div style="display: flex; justify-content: space-between; align-items: center"><span style="font-family: Fraunces, serif; font-size: 28px">Войти</span><button aria-label="Закрыть" style="width: 36px; height: 36px; border-radius: 50%; border: none; background: transparent; font-size: 20px; cursor: pointer">×</button></div>
+        <label class="lbl">Email<input class="input" value="anton@example.com"></label>
+        <label class="lbl">Пароль<input class="input" type="password" value="••••••••"></label>
+        <button style="padding: 14px; background: #16201E; color: #EEF1EC; border: none; border-radius: 12px; font-weight: 600; font-size: 15px; cursor: pointer">Войти</button>
+        <div style="display: flex; justify-content: space-between; font-size: 13px"><span style="color: #B5563A; text-decoration: underline">Забыли пароль?</span><span style="color: #5A4632">Нет аккаунта? Создать</span></div>
+        <div style="display: flex; align-items: center; gap: 10px; font-size: 12px; color: #6E5A48"><span style="flex: 1; height: 1px; background: #C9B497"></span>или<span style="flex: 1; height: 1px; background: #C9B497"></span></div>
+        <button style="padding: 12px; border: 1px solid #2E241D; background: transparent; color: #2E241D; border-radius: 12px; font-size: 15px; cursor: pointer">Войти через Google</button>
+        <span style="font-size: 12px; color: #B5563A">Неверный пароль. Попробуйте ещё раз или восстановите доступ.</span>
+      </div>
+    </div>
+
+    <div class="scrim">
+      <div class="modal" style="max-width: 420px">
+        <span style="font-family: Fraunces, serif; font-size: 26px">Выйти из аккаунта?</span>
+        <span style="font-size: 15px; line-height: 1.5; color: #4A3B2C">Брони и избранное сохранятся. Войдёте снова с этого же email.</span>
+        <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 6px">
+          <button style="padding: 12px 18px; border: 1px solid #2E241D; background: transparent; color: #2E241D; border-radius: 12px; cursor: pointer">Остаться</button>
+          <button style="padding: 12px 18px; background: #B5563A; color: #F4EAD9; border: none; border-radius: 12px; font-weight: 600; cursor: pointer">Выйти</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="scrim">
+      <div class="modal">
+        <span style="font-family: Fraunces, serif; font-size: 26px">Отменить бронь?</span>
+        <div style="background: #FFFFFF; border-radius: 12px; padding: 14px; font-size: 14px; display: flex; flex-direction: column; gap: 6px">
+          <div style="display: flex; justify-content: space-between"><span>Свет на мраморе · 2 места</span><span>90 PLN</span></div>
+          <div style="display: flex; justify-content: space-between; color: #1E6B66; font-weight: 600"><span>Возврат на карту</span><span>90 PLN</span></div>
+          <span style="font-size: 12px; color: #6E5A48">Деньги вернутся за 3–5 рабочих дней. Места снова появятся в продаже.</span>
+        </div>
+        <label class="lbl">Причина (необязательно)<select class="input"><option>Изменились планы</option><option>Нашёл другое событие</option><option>Другое</option></select></label>
+        <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 4px">
+          <button style="padding: 12px 18px; border: 1px solid #2E241D; background: transparent; color: #2E241D; border-radius: 12px; cursor: pointer">Оставить бронь</button>
+          <button style="padding: 12px 18px; background: #B5563A; color: #F4EAD9; border: none; border-radius: 12px; font-weight: 600; cursor: pointer">Отменить</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="scrim">
+      <div class="modal" style="max-width: 420px">
+        <span class="lbl">Мест нет</span>
+        <span style="font-family: Fraunces, serif; font-size: 26px">Сообщим, когда появятся места</span>
+        <span style="font-size: 14px; line-height: 1.5; color: #4A3B2C">Кухня Pomorza, дегустация. Пришлём письмо и уведомление в приложении. Письмо придёт, как только освободится место.</span>
+        <div style="display: flex; gap: 8px">
+          <span style="padding: 8px 12px; border-radius: 999px; background: #16201E; color: #F4EAD9; font-size: 13px">Письмо</span>
+          <span style="padding: 8px 12px; border-radius: 999px; border: 1px solid #2E241D; color: #2E241D; font-size: 13px">Push</span>
+        </div>
+        <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 4px">
+          <button style="padding: 12px 18px; border: 1px solid #2E241D; background: transparent; color: #2E241D; border-radius: 12px; cursor: pointer">Не нужно</button>
+          <button style="padding: 12px 18px; background: #16201E; color: #EEF1EC; border: none; border-radius: 12px; font-weight: 600; cursor: pointer">Сообщить</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":900}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>
