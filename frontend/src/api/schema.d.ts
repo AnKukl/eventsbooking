@@ -503,6 +503,9 @@ export interface components {
             /** @enum {string} */
             seatStatus?: "AVAILABLE" | "SOLD_OUT" | "WAITLIST";
             isFavorite?: boolean;
+            venue?: string;
+            price?: number;
+            coverUrl?: string;
         };
         OrganizerEventCreateRequest: {
             title: string;

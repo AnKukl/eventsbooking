@@ -164,4 +164,21 @@ h1, h2, h3, .display {
   --search-bg: rgba(255, 255, 255, 0.6);   /* header search field, D-bento */
   --mask-keep: #FFFFFF;                     /* logo mask (design/logo.svg): the visible square */
   --mask-cut: #000000;                      /* logo mask: the side notches */
+
+  /* S-auth */
+  --input-border: #C9B497;                  /* text fields; also the "или" divider */
+  --ink-label: #4A3B2C;                     /* field labels, quote author */
+  --tabs-bg: #E8D9C0;                       /* Вход / Регистрация switch */
+  --quote-glass: rgba(255, 255, 255, 0.5);  /* quote window over the landscape */
+  --quote-glass-border: 1px solid rgba(255, 255, 255, 0.7);
+  --quote-blur: blur(16px);
+  --radius-2xl: 20px;                       /* quote window, "В эту неделю" strip */
+
+  /* D-bento */
+  --photo-placeholder: #CFC8BA;             /* photo tile before or without a picture */
+  --strip-inset: inset 0 1px 0 rgba(255, 235, 210, 0.12);
+  --strip-label: #D9B99B;                   /* "Скоро" */
+  --strip-title: #F3E7D6;                   /* "В эту неделю"; the link on hover (E-buttons) */
+  --strip-link: #CDB79C;                    /* "все →" */
+  --disabled-bg: #D9C7AE;                   /* "Мест нет" (E-buttons) */
 }

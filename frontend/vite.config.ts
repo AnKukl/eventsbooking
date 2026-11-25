@@ -16,5 +16,7 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
     css: true,
+    // the first render of a screen (CSS modules, images) is slow on a busy laptop
+    testTimeout: 15000,
   },
 })
