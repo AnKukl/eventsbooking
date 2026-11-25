@@ -1191,6 +1191,15 @@
           },
           "isFavorite" : {
             "type" : "boolean"
+          },
+          "venue" : {
+            "type" : "string"
+          },
+          "price" : {
+            "type" : "number"
+          },
+          "coverUrl" : {
+            "type" : "string"
           }
         }
       },

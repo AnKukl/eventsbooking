@@ -14,11 +14,15 @@ public record EventResponse(
         int bookedCount,
         long organizerId,
         SeatStatus seatStatus,
-        @JsonProperty("isFavorite") boolean isFavorite) {
+        @JsonProperty("isFavorite") boolean isFavorite,
+        String venue,
+        java.math.BigDecimal price,
+        /* the first picture of the event (its cover), or null */
+        String coverUrl) {
 
-    public static EventResponse from(Event event, boolean favorite) {
+    public static EventResponse from(Event event, boolean favorite, String coverUrl) {
         return new EventResponse(event.getId(), event.getTitle(), event.getDescription(),
                 event.getShortDescription(), event.getStartsAt(), event.getCapacity(), event.getBookedCount(), event.getOrganizerId(),
-                event.seatStatus(), favorite);
+                event.seatStatus(), favorite, event.getVenue(), event.getPrice(), coverUrl);
     }
 }

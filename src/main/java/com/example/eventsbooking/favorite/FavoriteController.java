@@ -23,8 +23,10 @@ import java.security.Principal;
 class FavoriteController {
 
     private final FavoriteService service;
+    private final com.example.eventsbooking.event.EventCovers covers;
 
-    FavoriteController(FavoriteService service) {
+    FavoriteController(FavoriteService service, com.example.eventsbooking.event.EventCovers covers) {
+        this.covers = covers;
         this.service = service;
     }
 
@@ -49,7 +51,8 @@ class FavoriteController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     "Sorting is not supported: favorites are ordered by the time they were added, newest first");
         }
-        return new PagedModel<>(service.list(CurrentUser.id(principal), pageable)
-                .map(event -> EventResponse.from(event, true)));
+        var page = service.list(CurrentUser.id(principal), pageable);
+        var coverUrls = covers.coverUrls(page.getContent().stream().map(event -> event.getId()).toList());
+        return new PagedModel<>(page.map(event -> EventResponse.from(event, true, coverUrls.get(event.getId()))));
     }
 }

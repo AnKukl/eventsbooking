@@ -44,6 +44,11 @@ class FavoriteControllerTest {
     private final MockMvc mockMvc;
 
     @MockitoBean
+
+    private com.example.eventsbooking.event.EventCovers eventCovers;
+
+
+    @MockitoBean
     private JwtDecoder jwtDecoder;
 
     @MockitoBean

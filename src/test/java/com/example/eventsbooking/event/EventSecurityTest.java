@@ -51,6 +51,11 @@ class EventSecurityTest {
     private final MockMvc mockMvc;
 
     @MockitoBean
+
+    private com.example.eventsbooking.event.EventCovers eventCovers;
+
+
+    @MockitoBean
     private EventService service;
 
     @MockitoBean

@@ -31,10 +31,12 @@ class EventController {
 
     private final EventService service;
     private final FavoriteService favorites;
+    private final EventCovers covers;
 
-    EventController(EventService service, FavoriteService favorites) {
+    EventController(EventService service, FavoriteService favorites, EventCovers covers) {
         this.service = service;
         this.favorites = favorites;
+        this.covers = covers;
     }
 
     @PostMapping
@@ -42,14 +44,14 @@ class EventController {
         Event created = service.create(request, CurrentUser.id(principal));
         URI location = ServletUriComponentsBuilder.fromCurrentRequest()
                 .path("/{id}").buildAndExpand(created.getId()).toUri();
-        return ResponseEntity.created(location).body(EventResponse.from(created, false));
+        return ResponseEntity.created(location).body(EventResponse.from(created, false, coverOf(created.getId())));
     }
 
     @GetMapping("/{id}")
     EventResponse get(@PathVariable long id, Principal principal) {
         Event event = service.get(id);
         boolean favorite = favorites.favoriteEventIds(CurrentUser.idOrNull(principal), List.of(id)).contains(id);
-        return EventResponse.from(event, favorite);
+        return EventResponse.from(event, favorite, coverOf(id));
     }
 
     /**
@@ -80,21 +82,28 @@ class EventController {
         });
         Page<Event> page = service.list(pageable);
         // one lookup for the whole page, not one per event
-        Set<Long> favored = favorites.favoriteEventIds(CurrentUser.idOrNull(principal),
-                page.getContent().stream().map(Event::getId).toList());
-        return new PagedModel<>(page.map(event -> EventResponse.from(event, favored.contains(event.getId()))));
+        List<Long> ids = page.getContent().stream().map(Event::getId).toList();
+        Set<Long> favored = favorites.favoriteEventIds(CurrentUser.idOrNull(principal), ids);
+        java.util.Map<Long, String> coverUrls = covers.coverUrls(ids);
+        return new PagedModel<>(page.map(event ->
+                EventResponse.from(event, favored.contains(event.getId()), coverUrls.get(event.getId()))));
     }
 
     @PutMapping("/{id}")
     EventResponse update(@PathVariable long id, @Valid @RequestBody EventRequest request, Principal principal) {
         long userId = CurrentUser.id(principal);
         Event event = service.update(id, request, userId);
-        return EventResponse.from(event, favorites.favoriteEventIds(userId, List.of(id)).contains(id));
+        return EventResponse.from(event, favorites.favoriteEventIds(userId, List.of(id)).contains(id),
+                coverOf(id));
     }
 
     @DeleteMapping("/{id}")
     ResponseEntity<Void> delete(@PathVariable long id, Principal principal) {
         service.delete(id, CurrentUser.id(principal));
         return ResponseEntity.noContent().build();
+    }
+
+    private String coverOf(Long eventId) {
+        return eventId == null ? null : covers.coverUrls(List.of(eventId)).get(eventId);
     }
 }
