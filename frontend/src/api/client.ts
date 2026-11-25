@@ -1,15 +1,7 @@
-/**
- * Error body of the API (RFC 9457). The OpenAPI document does not describe it, so it is written by hand;
- * `errors` is filled for 400 (field validation) and 422 (business rules), see docs/decisions.md, entry 015.
- */
-export interface ProblemDetail {
-  type?: string
-  title?: string
-  status?: number
-  detail?: string
-  instance?: string
-  errors?: { field: string; message: string }[]
-}
+import type { components } from './schema'
+
+/** Error body of the API (RFC 9457); `errors` lists fields for 400 (validation) and 422 (business rules). */
+export type ProblemDetail = components['schemas']['ProblemDetail']
 
 /** An error answer of the API (application/problem+json, RFC 9457). */
 export class ApiError extends Error {
@@ -23,7 +15,10 @@ export class ApiError extends Error {
   }
 }
 
-/** Calls the API through the same origin (the dev server proxies /api to the backend). */
+/**
+ * Calls the API through the same origin (the dev server proxies /api to the backend). The session lives in HttpOnly
+ * cookies that the browser sends by itself; the page never sees the token. A Bearer token is only for scripts.
+ */
 export async function api<T>(path: string, init: RequestInit = {}, token?: string): Promise<T> {
   const headers = new Headers(init.headers)
   headers.set('Accept', 'application/json, application/problem+json')
@@ -32,7 +27,7 @@ export async function api<T>(path: string, init: RequestInit = {}, token?: strin
   }
   if (token) headers.set('Authorization', `Bearer ${token}`)
 
-  const response = await fetch(path, { ...init, headers })
+  const response = await fetch(path, { credentials: 'same-origin', ...init, headers })
   if (!response.ok) {
     const problem = response.headers.get('Content-Type')?.includes('json')
       ? ((await response.json()) as ProblemDetail)

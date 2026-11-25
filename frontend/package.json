@@ -10,7 +10,8 @@
     "test": "node scripts/vitest.mjs run",
     "test:watch": "node scripts/vitest.mjs",
     "typecheck": "tsc --noEmit",
-    "api:types": "openapi-typescript http://localhost:8080/v3/api-docs -o src/api/schema.d.ts"
+    "api:types": "openapi-typescript ../docs/openapi.json -o src/api/schema.d.ts",
+    "api:types:live": "openapi-typescript http://localhost:8080/v3/api-docs -o src/api/schema.d.ts"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.108.2",

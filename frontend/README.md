@@ -11,7 +11,8 @@ Vite + React + TypeScript, react-router, TanStack Query, zod. Тесты — Vit
 | Тесты | `npm test` |
 | Проверка типов | `npm run typecheck` |
 | Сборка | `npm run build` |
-| Типы API из OpenAPI | `npm run api:types` (бэкенд должен работать на `localhost:8080`) |
+| Типы API из OpenAPI | `npm run api:types` (из снимка `../docs/openapi.json`, бэкенд не нужен) |
+| Типы API с живого бэкенда | `npm run api:types:live` (`localhost:8080`) |
 
 В dev всё под `/api` проксируется на бэкенд (`BACKEND_URL`, по умолчанию `http://localhost:8080`), поэтому страница и
 API живут на одном origin и CORS не участвует.
@@ -20,8 +21,11 @@ API живут на одном origin и CORS не участвует.
 
 - `src/styles/tokens.css` — **единственное место с цветами** (а также шрифты, радиусы, отступы). Остальной CSS и SVG
   используют только переменные.
-- `src/api/schema.d.ts` — сгенерирован `openapi-typescript`, руками не править; после изменения API — `npm run api:types`.
+- `src/api/schema.d.ts` — сгенерирован `openapi-typescript` из `docs/openapi.json` (снимок контракта, его проверяет
+  `OpenApiSnapshotTest` в бэкенде), руками не править; после изменения API — `npm run api:types`.
 - `src/api/client.ts` — `fetch` к `/api`; ошибка API превращается в `ApiError` с `ProblemDetail` (RFC 9457).
+  Сессия — HttpOnly cookie `access_token` и `refresh_token`, браузер шлёт их сам, страница токен не видит
+  (решение 017 в `docs/decisions.md`).
 - `src/components/Logo.tsx` — логотип 40×40 (цвета из токенов).
 - `src/app/router.tsx` — маршруты: `/`, `/organizer`, остальное — 404.
 

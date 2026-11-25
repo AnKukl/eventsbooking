@@ -212,6 +212,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/auth/refresh": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["refresh"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/logout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["logout"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/auth/login": {
         parameters: {
             query?: never;
@@ -537,15 +569,13 @@ export interface components {
             /** @enum {string} */
             role?: "USER" | "ORGANIZER";
         };
+        LoginResponse: {
+            /** Format: int64 */
+            expiresIn?: number;
+        };
         LoginRequest: {
             email: string;
             password: string;
-        };
-        TokenResponse: {
-            accessToken?: string;
-            tokenType?: string;
-            /** Format: int64 */
-            expiresIn?: number;
         };
         ConfirmEmailRequest: {
             token: string;
@@ -672,6 +702,21 @@ export interface components {
         PagedModelBookingResponse: {
             content?: components["schemas"]["BookingResponse"][];
             page?: components["schemas"]["PageMetadata"];
+        };
+        /** @description Error body (RFC 9457, application/problem+json) */
+        ProblemDetail: {
+            /** Format: uri */
+            type?: string;
+            title?: string;
+            /** Format: int32 */
+            status?: number;
+            detail?: string;
+            /** Format: uri */
+            instance?: string;
+            errors?: {
+                field?: string;
+                message?: string;
+            }[];
         };
     };
     responses: never;
@@ -1121,6 +1166,48 @@ export interface operations {
             };
         };
     };
+    refresh: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: {
+                refresh_token?: string;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["LoginResponse"];
+                };
+            };
+        };
+    };
+    logout: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: {
+                refresh_token?: string;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     login: {
         parameters: {
             query?: never;
@@ -1140,7 +1227,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["TokenResponse"];
+                    "*/*": components["schemas"]["LoginResponse"];
                 };
             };
         };
