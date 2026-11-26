@@ -72,7 +72,17 @@ class EventController {
 
     @GetMapping
     PagedModel<EventResponse> list(@PageableDefault(size = 20, sort = "startsAt") Pageable pageable,
+            @org.springframework.web.bind.annotation.RequestParam(required = false)
+            @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME)
+            java.time.Instant from,
+            @org.springframework.web.bind.annotation.RequestParam(required = false)
+            @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME)
+            java.time.Instant to,
             Principal principal) {
+        if (from != null && to != null && !from.isBefore(to)) {
+            throw new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST,
+                    "'from' must be before 'to'");
+        }
         pageable.getSort().forEach(order -> {
             if (!SORTABLE.contains(order.getProperty())) {
                 throw new org.springframework.web.server.ResponseStatusException(
@@ -80,7 +90,7 @@ class EventController {
                         "Unsupported sort property: " + order.getProperty() + ". Allowed: " + new java.util.TreeSet<>(SORTABLE));
             }
         });
-        Page<Event> page = service.list(pageable);
+        Page<Event> page = service.list(from, to, pageable);
         // one lookup for the whole page, not one per event
         List<Long> ids = page.getContent().stream().map(Event::getId).toList();
         Set<Long> favored = favorites.favoriteEventIds(CurrentUser.idOrNull(principal), ids);

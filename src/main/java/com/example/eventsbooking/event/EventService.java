@@ -48,7 +48,19 @@ public class EventService {
     }
 
     public Page<Event> list(Pageable pageable) {
-        return repository.findByStatus(EventStatus.PUBLISHED, pageable);
+        return list(null, null, pageable);
+    }
+
+    /** Published events, optionally only those starting in [from, to); either end may be open. */
+    public Page<Event> list(java.time.Instant from, java.time.Instant to, Pageable pageable) {
+        if (from == null && to == null) {
+            return repository.findByStatus(EventStatus.PUBLISHED, pageable);
+        }
+        java.time.Instant start = from == null ? java.time.Instant.EPOCH : from;
+        return to == null
+                ? repository.findByStatusAndStartsAtGreaterThanEqual(EventStatus.PUBLISHED, start, pageable)
+                : repository.findByStatusAndStartsAtGreaterThanEqualAndStartsAtLessThan(EventStatus.PUBLISHED, start, to,
+                        pageable);
     }
 
     /** Only the organizer who created the event may change it. */

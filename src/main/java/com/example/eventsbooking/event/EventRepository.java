@@ -11,6 +11,13 @@ public interface EventRepository extends JpaRepository<Event, Long> {
     /** The public catalog: only published events. */
     Page<Event> findByStatus(EventStatus status, Pageable pageable);
 
+    /** The public catalog from a moment on (the home page: from today). */
+    Page<Event> findByStatusAndStartsAtGreaterThanEqual(EventStatus status, java.time.Instant from, Pageable pageable);
+
+    /** The public catalog in a window [from, to) (the home page: this week). */
+    Page<Event> findByStatusAndStartsAtGreaterThanEqualAndStartsAtLessThan(EventStatus status, java.time.Instant from,
+            java.time.Instant to, Pageable pageable);
+
     boolean existsByIdAndStatus(long id, EventStatus status);
 
     // ---- the organizer's own events ----

@@ -92,6 +92,39 @@ class EventCatalogFieldsIntegrationTest {
                 .andExpect(jsonPath("$.content[0].coverUrl").value("/api/media/lighthouse.png"));
     }
 
+    @Test
+    void theCatalogueCanBeLimitedToATimeWindow() throws Exception {
+        long past = eventAt("Прошедшее", "now() - interval '2 days'");
+        long soon = eventAt("Через три дня", "now() + interval '3 days'");
+        long later = eventAt("Через месяц", "now() + interval '30 days'");
+        String from = java.time.Instant.now().toString();
+        String weekEnd = java.time.Instant.now().plus(java.time.Duration.ofDays(7)).toString();
+
+        mockMvc.perform(get("/api/events").param("from", from).param("size", "100"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[?(@.id == " + past + ")]").isEmpty())
+                .andExpect(jsonPath("$.content[?(@.id == " + soon + ")]").isNotEmpty())
+                .andExpect(jsonPath("$.content[?(@.id == " + later + ")]").isNotEmpty());
+        mockMvc.perform(get("/api/events").param("from", from).param("to", weekEnd).param("size", "100"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[?(@.id == " + soon + ")]").isNotEmpty())
+                .andExpect(jsonPath("$.content[?(@.id == " + later + ")]").isEmpty());
+    }
+
+    @Test
+    void aWindowThatEndsBeforeItStartsIsRejected() throws Exception {
+        mockMvc.perform(get("/api/events").param("from", "2031-01-02T00:00:00Z").param("to", "2031-01-01T00:00:00Z"))
+                .andExpect(status().isBadRequest());
+        mockMvc.perform(get("/api/events").param("from", "yesterday"))
+                .andExpect(status().isBadRequest());
+    }
+
+    private long eventAt(String title, String startsAtSql) {
+        jdbc.update("insert into events (title, starts_at, capacity, organizer_id) values (?, " + startsAtSql + ", 20, 1)",
+                title);
+        return jdbc.queryForObject("select max(id) from events", Long.class);
+    }
+
     private long event(String title, String venue, String price) {
         jdbc.update("insert into events (title, starts_at, capacity, organizer_id, venue, price) "
                 + "values (?, now() + interval '10 days', 20, 1, ?, ?::numeric)", title, venue, price);

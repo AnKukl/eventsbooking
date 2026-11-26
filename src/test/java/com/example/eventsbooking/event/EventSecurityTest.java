@@ -85,7 +85,7 @@ class EventSecurityTest {
     @Test
     void guestsMayReadTheCatalogButNotChangeIt() throws Exception {
         when(service.get(5L)).thenReturn(event(5L));
-        when(service.list(any(Pageable.class))).thenReturn(new PageImpl<>(List.of(event(5L))));
+        when(service.list(any(), any(), any(Pageable.class))).thenReturn(new PageImpl<>(List.of(event(5L))));
 
         mockMvc.perform(get("/api/events/5")).andExpect(status().isOk());
         mockMvc.perform(get("/api/events")).andExpect(status().isOk());
@@ -169,7 +169,7 @@ class EventSecurityTest {
     @Test
     void userCanReadEvents() throws Exception {
         when(service.get(5L)).thenReturn(event(5L));
-        when(service.list(any(Pageable.class))).thenReturn(new PageImpl<>(List.of(event(5L))));
+        when(service.list(any(), any(), any(Pageable.class))).thenReturn(new PageImpl<>(List.of(event(5L))));
 
         mockMvc.perform(get("/api/events/5").with(user())).andExpect(status().isOk());
         mockMvc.perform(get("/api/events").with(user())).andExpect(status().isOk());
