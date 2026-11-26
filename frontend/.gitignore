@@ -3,3 +3,5 @@ dist
 *.local
 coverage
 *.tsbuildinfo
+e2e-results
+playwright-report

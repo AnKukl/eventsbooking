@@ -2,7 +2,8 @@
 
 [![CI](https://github.com/AnKukl/eventsbooking/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/AnKukl/eventsbooking/actions/workflows/ci.yml)
 
-REST API для мероприятий и бронирования мест: Spring Boot 4, Java 25, PostgreSQL, Kafka, JWT.
+Мероприятия и бронирование мест: REST API на Spring Boot 4 (Java 25, PostgreSQL, Kafka, JWT в HttpOnly cookie) и
+веб-интерфейс на React (Vite, TypeScript) по утверждённым макетам из [design/](design/README.md).
 Правила разработки и команды — [CLAUDE.md](CLAUDE.md), архитектурные решения — [docs/decisions.md](docs/decisions.md).
 
 ## Запуск одной командой
@@ -12,10 +13,14 @@ REST API для мероприятий и бронирования мест: Spr
 $env:JWT_SECRET = [Convert]::ToBase64String((1..48 | ForEach-Object { Get-Random -Maximum 256 }) -as [byte[]])
 docker compose up -d --build
 curl.exe http://localhost:8080/actuator/health
+start http://localhost:8090
 ```
 
-Поднимаются `postgres`, `kafka` и `app` (многоэтапный [Dockerfile](Dockerfile): сборка на `eclipse-temurin:25-jdk`,
-запуск на `eclipse-temurin:25-jre` под непривилегированным пользователем). Если порт 8080 занят: `$env:APP_PORT = "8083"`.
+Веб-интерфейс — **http://localhost:8090**, API — http://localhost:8080. Поднимаются `postgres`, `kafka`, `app` и
+`frontend` (сборка Vite, раздача через nginx, `/api` проксируется в `app`; порт меняется через `FRONTEND_PORT`). Чтобы
+зарегистрироваться организатором, задайте код приглашения до запуска: `$env:ORGANIZER_INVITE_CODE = "..."`.
+Сервис `app` собирается многоэтапным [Dockerfile](Dockerfile): сборка на `eclipse-temurin:25-jdk`,
+запуск на `eclipse-temurin:25-jre` под непривилегированным пользователем. Если порт 8080 занят: `$env:APP_PORT = "8083"`.
 Секреты в образ не попадают: `JWT_SECRET` и пароль БД передаются только переменными окружения при запуске.
 Любая команда `docker compose` (в том числе `down`) требует заданный `JWT_SECRET`. Остановить: `docker compose down`
 (данные БД сохраняются), `docker compose down -v` (с удалением данных).
@@ -29,6 +34,34 @@ $env:JWT_SECRET = "..."
 ```
 
 Тесты и сборка: `.\mvnw.cmd verify` (нужен Docker: Testcontainers поднимает PostgreSQL и Kafka).
+
+## Веб-интерфейс
+
+| Главная (D-bento) | Предпросмотр при наведении (R-hover) |
+|---|---|
+| ![Главная](docs/screenshots/home.png) | ![Предпросмотр](docs/screenshots/preview.png) |
+| **Бронирование (I-booking)** | **Кабинет организатора (T-organizer)** |
+| ![Бронирование](docs/screenshots/booking.png) | ![Кабинет организатора](docs/screenshots/organizer.png) |
+
+Экраны: главная, событие и бронирование с таймером удержания, поиск с фильтрами в URL, карта (Leaflet и
+OpenStreetMap), неделя, вход и регистрация, личный кабинет (брони, избранное, профиль, уведомления), кабинет
+организатора и редактор с автосохранением. Сессия — HttpOnly cookie, токен в JavaScript не попадает; истёкший
+access-токен обновляется сам. Подробности и команды — [frontend/README.md](frontend/README.md).
+
+Разработка фронтенда (бэкенд на 8080, Vite проксирует `/api`):
+
+```
+cd frontend
+npm ci
+npm run dev          # http://localhost:5173
+npm test             # Vitest
+npm run e2e          # Playwright против запущенного стека (по умолчанию http://localhost:8090)
+```
+
+e2e регистрируют организатора, поэтому стек должен быть поднят с `ORGANIZER_INVITE_CODE`, а тестам передаётся тот же код
+в `E2E_INVITE_CODE` (по умолчанию оба `e2e-invite-code`, как в CI). Тесты пишут в базу своих пользователей
+(`e2e-*@example.com`) и события; убрать их из локальной базы:
+`docker exec -i eventsbooking-postgres psql -U postgres -d eventsbooking < frontend/e2e/cleanup.sql`.
 
 ## OpenAPI и Swagger UI
 

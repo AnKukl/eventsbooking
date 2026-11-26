@@ -34,12 +34,14 @@ services:
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      # the default 1 GB heap is far more than one dev broker needs; WSL often has only 2-3 GB for all containers
+      KAFKA_HEAP_OPTS: -Xms256m -Xmx384m
     healthcheck:
       test: ["CMD-SHELL", "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9092 > /dev/null 2>&1"]
       interval: 10s
       timeout: 10s
       retries: 12
-      start_period: 15s
+      start_period: 90s   # a slow laptop needs more than a minute for the broker
 
   app:
     build: .
@@ -73,7 +75,19 @@ services:
       interval: 10s
       timeout: 5s
       retries: 12
-      start_period: 30s
+      start_period: 180s  # a slow laptop (2 cores for WSL) takes minutes to start Spring
+
+
+  # The web interface: http://localhost:8090 (FRONTEND_PORT). nginx serves the build and forwards /api to app.
+  frontend:
+    build: ./frontend
+    image: eventsbooking-frontend:latest
+    container_name: eventsbooking-frontend
+    depends_on:
+      app:
+        condition: service_healthy
+    ports:
+      - "${FRONTEND_PORT:-8090}:80"
 
 volumes:
   pgdata:

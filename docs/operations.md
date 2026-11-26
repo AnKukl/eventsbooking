@@ -33,6 +33,11 @@
 Настройки: `app.cleanup.orphans.grace` (по умолчанию `PT24H`), `app.cleanup.orphans.dry-run` (по умолчанию `true`),
 каталог — `app.storage.local-dir` (переменная `STORAGE_DIR`, в Docker — том `uploads`).
 
+**Приложение на хосте и в Docker.** База у них общая (том `pgdata`), а файлы — нет: `./mvnw spring-boot:run` пишет
+фото в `./data/uploads`, приложение из `compose.yaml` — в том `uploads`. Если события создавались в одном режиме, а смотрятся
+в другом, обложки будут отдавать 404 (а для задачи очистки это строки `ATTACHED` без файла). Перенести файлы в том:
+`docker cp data/uploads/. eventsbooking-app:/app/data/uploads/` (в Git Bash — с `MSYS_NO_PATHCONV=1`).
+
 **Как включить удаление сирот.** По умолчанию задача работает в режиме dry run: только считает и пишет итог в лог INFO
 (`Orphan cleanup finished (dry run, nothing removed): ...`). Порядок включения:
 
