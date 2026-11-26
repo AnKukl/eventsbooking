@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import type { EventItem } from '../api/events'
 import { FavoriteButton } from './FavoriteButton'
+import { useHoverPreview } from './preview/HoverPreview'
 import { price, seatsLeft, seatsText, whenTitle } from '../pages/home/format'
 import styles from './EventCard.module.css'
 
@@ -11,8 +12,10 @@ import styles from './EventCard.module.css'
 export function EventCard({ event }: { event: EventItem }) {
   const soldOut = event.seatStatus === 'SOLD_OUT'
   const chip = price(event)
+  const { trigger, overlay } = useHoverPreview(event)
   return (
-    <article className={`${styles.card} ${soldOut ? styles.soldOut : ''}`}>
+    <article className={`${styles.card} ${soldOut ? styles.soldOut : ''}`} {...trigger}>
+      {overlay}
       <div className={styles.top}>
         <span className={soldOut ? styles.whenMuted : styles.when}>{soldOut ? 'Нет мест' : whenTitle(event.startsAt!)}</span>
         <FavoriteButton event={event} className={styles.heart} />

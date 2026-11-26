@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { type EventItem, useEventsFromToday, useEventsThisWeek } from '../../api/events'
 import { FavoriteButton } from '../../components/FavoriteButton'
+import { useHoverPreview } from '../../components/preview/HoverPreview'
 import { price, seatsLeft, seatsText, when, whenTitle } from './format'
 import { arrange } from './select'
 import styles from './HomePage.module.css'
@@ -12,8 +13,10 @@ function Cover({ event }: { event: EventItem }) {
 function BigTile({ event }: { event: EventItem }) {
   const chip = price(event)
   const left = seatsLeft(event)
+  const { trigger, overlay } = useHoverPreview(event)
   return (
-    <article className={`photo ${styles.tile} ${styles.big}`}>
+    <article className={`photo ${styles.tile} ${styles.big}`} {...trigger}>
+      {overlay}
       <Cover event={event} />
       <div className={`glass ${styles.glassBig}`}>
         <div className={styles.meta}>
@@ -43,8 +46,10 @@ function BigTile({ event }: { event: EventItem }) {
 
 function SmallTile({ event, place }: { event: EventItem; place: string }) {
   const chip = price(event)
+  const { trigger, overlay } = useHoverPreview(event)
   return (
-    <article className={`photo ${styles.tile} ${place}`}>
+    <article className={`photo ${styles.tile} ${place}`} {...trigger}>
+      {overlay}
       <Cover event={event} />
       <Link to={`/events/${event.id}`} className={styles.tileLink} aria-label={event.title} />
       <div className={`glass ${styles.glassSmall}`}>

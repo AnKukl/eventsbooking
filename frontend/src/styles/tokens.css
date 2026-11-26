@@ -186,6 +186,10 @@ h1, h2, h3, .display {
   --toast-shadow: 0 10px 20px rgba(20, 12, 6, 0.4);
   --toast-action: #E9A07F;
 
+  /* R-hover: the full-screen preview */
+  --preview-bg: #2B2A27;                    /* behind the photo while it loads */
+  --preview-text: #3A2F26;                  /* the short description */
+
   /* K-favorites */
   --empty-border: 1px dashed #9C8464;       /* the hint card where the list ends */
   --ink-soft: #5A4632;                      /* the hint text; "← Все события" (O-event) */
