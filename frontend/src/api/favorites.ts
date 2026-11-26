@@ -78,9 +78,10 @@ export function useFavorite() {
 }
 
 /** My favourites, newest first. */
-export function useFavorites() {
+export function useFavorites(enabled = true) {
   return useQuery({
     queryKey: ['favorites'],
     queryFn: () => api<EventPage>('/api/favorites?page=0&size=50'),
+    enabled,
   })
 }

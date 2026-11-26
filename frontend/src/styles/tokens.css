@@ -204,6 +204,19 @@ h1, h2, h3, .display {
   /* G-search, J-week */
   --label-brown: #6B5440;                   /* "Результаты", "Неделя 17–23 ноября" */
 
+  /* F-account, L-profile, M-notifications */
+  --success-bg: #DDEBE8;                    /* "Подтверждён" badge, with --teal text */
+  --danger-border: 1px solid #C98C6E;       /* "Удалить аккаунт" card */
+  --danger-ink: #8A3D26;
+  --dot-read: 1px solid #9C8464;            /* a read notification */
+
+  /* T-organizer, U-editor */
+  --badge-warn-bg: #F3E3C7;                 /* "Мало мест" */
+  --badge-warn-ink: #7A5417;
+  --badge-draft-bg: #EFE7DA;                /* "Черновик", with --ink-soft text */
+  --editor-input-bg: #FBF6EC;               /* editor fields */
+  --photo-cover: #7A4A32;                   /* "Главное фото" placeholder; the preview gradient ends in --ink-2 */
+
   /* K-favorites */
   --empty-border: 1px dashed #9C8464;       /* the hint card where the list ends */
   --ink-soft: #5A4632;                      /* the hint text; "← Все события" (O-event) */

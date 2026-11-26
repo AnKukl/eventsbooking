@@ -84,6 +84,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/me/notifications/read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["markRead"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/me/email-change": {
         parameters: {
             query?: never;
@@ -388,6 +404,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/me/notifications/unread-count": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["unreadCount"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/favorites": {
         parameters: {
             query?: never;
@@ -477,7 +509,6 @@ export interface components {
         };
         NotificationPreferencesRequest: {
             preferences: components["schemas"]["Item"][];
-            typesUnique?: boolean;
         };
         NotificationPreference: {
             /** @enum {string} */
@@ -542,6 +573,9 @@ export interface components {
             audienceNotFit?: string[];
             latitude?: number;
             longitude?: number;
+        };
+        MarkReadRequest: {
+            ids?: number[];
         };
         EmailChangeRequest: {
             /** Format: email */
@@ -721,6 +755,10 @@ export interface components {
             content?: components["schemas"]["NotificationResponse"][];
             page?: components["schemas"]["PageMetadata"];
         };
+        UnreadCount: {
+            /** Format: int64 */
+            count?: number;
+        };
         PagedModelEventResponse: {
             content?: components["schemas"]["EventResponse"][];
             page?: components["schemas"]["PageMetadata"];
@@ -733,8 +771,37 @@ export interface components {
             audienceNotFit?: string[];
             media?: components["schemas"]["MediaResponse"][];
         };
-        PagedModelBookingResponse: {
-            content?: components["schemas"]["BookingResponse"][];
+        EventSummary: {
+            title?: string;
+            /** Format: date-time */
+            startsAt?: string;
+            venue?: string;
+            price?: number;
+            latitude?: number;
+            longitude?: number;
+        };
+        MyBookingResponse: {
+            /** Format: int64 */
+            id?: number;
+            /** Format: int64 */
+            eventId?: number;
+            /** Format: int64 */
+            userId?: number;
+            /** Format: int32 */
+            seats?: number;
+            /** @enum {string} */
+            status?: "HOLD" | "CONFIRMED" | "CANCELLED" | "REFUND_PENDING";
+            /** Format: date-time */
+            holdExpiresAt?: string;
+            cancellationReason?: string;
+            /** Format: date-time */
+            createdAt?: string;
+            /** Format: date-time */
+            cancelledAt?: string;
+            event?: components["schemas"]["EventSummary"];
+        };
+        PagedModelMyBookingResponse: {
+            content?: components["schemas"]["MyBookingResponse"][];
             page?: components["schemas"]["PageMetadata"];
         };
         /** @description Error body (RFC 9457, application/problem+json) */
@@ -969,6 +1036,28 @@ export interface operations {
                 content: {
                     "*/*": components["schemas"]["MediaResponse"][];
                 };
+            };
+        };
+    };
+    markRead: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["MarkReadRequest"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -1497,6 +1586,26 @@ export interface operations {
             };
         };
     };
+    unreadCount: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["UnreadCount"];
+                };
+            };
+        };
+    };
     list_2: {
         parameters: {
             query: {
@@ -1558,7 +1667,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["PagedModelBookingResponse"];
+                    "*/*": components["schemas"]["PagedModelMyBookingResponse"];
                 };
             };
         };
