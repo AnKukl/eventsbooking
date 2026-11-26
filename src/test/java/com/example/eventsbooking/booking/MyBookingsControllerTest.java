@@ -34,6 +34,11 @@ class MyBookingsControllerTest {
     private final MockMvc mockMvc;
 
     @MockitoBean
+
+    private com.example.eventsbooking.event.EventRepository eventRepository;
+
+
+    @MockitoBean
     private JwtDecoder jwtDecoder;
 
     @MockitoBean

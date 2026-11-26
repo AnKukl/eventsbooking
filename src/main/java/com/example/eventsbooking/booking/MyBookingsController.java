@@ -23,13 +23,15 @@ class MyBookingsController {
     private static final Set<String> SORTABLE = Set.of("id", "createdAt", "status");
 
     private final BookingService service;
+    private final com.example.eventsbooking.event.EventRepository events;
 
-    MyBookingsController(BookingService service) {
+    MyBookingsController(BookingService service, com.example.eventsbooking.event.EventRepository events) {
         this.service = service;
+        this.events = events;
     }
 
     @GetMapping
-    PagedModel<BookingResponse> list(
+    PagedModel<MyBookingResponse> list(
             @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
             Principal principal) {
         pageable.getSort().forEach(order -> {
@@ -38,6 +40,11 @@ class MyBookingsController {
                         "Unsupported sort property: " + order.getProperty() + ". Allowed: " + new TreeSet<>(SORTABLE));
             }
         });
-        return new PagedModel<>(service.findMine(CurrentUser.id(principal), pageable).map(BookingResponse::from));
+        var page = service.findMine(CurrentUser.id(principal), pageable);
+        // one query for the events of the whole page
+        java.util.Map<Long, com.example.eventsbooking.event.Event> byId = new java.util.HashMap<>();
+        events.findAllById(page.getContent().stream().map(Booking::getEventId).distinct().toList())
+                .forEach(event -> byId.put(event.getId(), event));
+        return new PagedModel<>(page.map(booking -> MyBookingResponse.from(booking, byId.get(booking.getEventId()))));
     }
 }

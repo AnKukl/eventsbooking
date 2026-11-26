@@ -32,4 +32,24 @@ class NotificationController {
         }
         return new PagedModel<>(service.feed(CurrentUser.id(principal), pageable).map(NotificationResponse::from));
     }
+
+    record UnreadCount(long count) {
+    }
+
+    /** {@code ids}: which ones; absent or empty: all of them. */
+    record MarkReadRequest(@jakarta.validation.constraints.Size(max = 500) java.util.List<Long> ids) {
+    }
+
+    @GetMapping("/unread-count")
+    UnreadCount unreadCount(Principal principal) {
+        return new UnreadCount(service.unreadCount(CurrentUser.id(principal)));
+    }
+
+    /** Opening the feed marks it read. The user's own notifications only; repeating it is harmless. */
+    @org.springframework.web.bind.annotation.PostMapping("/read")
+    @org.springframework.web.bind.annotation.ResponseStatus(HttpStatus.NO_CONTENT)
+    void markRead(@jakarta.validation.Valid @org.springframework.web.bind.annotation.RequestBody(required = false) MarkReadRequest request,
+            Principal principal) {
+        service.markRead(CurrentUser.id(principal), request == null ? null : request.ids());
+    }
 }

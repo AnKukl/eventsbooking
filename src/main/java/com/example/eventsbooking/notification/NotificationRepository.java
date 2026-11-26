@@ -43,4 +43,19 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
 
     /** The caller's feed, newest first. The order is part of the query: pass an unsorted Pageable. */
     Page<Notification> findByUserIdOrderByCreatedAtDescIdDesc(long userId, Pageable pageable);
+
+    long countByUserIdAndReadAtIsNull(long userId);
+
+    @org.springframework.data.jpa.repository.Modifying
+    @org.springframework.data.jpa.repository.Query(
+            "UPDATE Notification n SET n.readAt = :now WHERE n.userId = :userId AND n.readAt IS NULL")
+    int markAllRead(@org.springframework.data.repository.query.Param("userId") long userId,
+            @org.springframework.data.repository.query.Param("now") java.time.Instant now);
+
+    @org.springframework.data.jpa.repository.Modifying
+    @org.springframework.data.jpa.repository.Query(
+            "UPDATE Notification n SET n.readAt = :now WHERE n.userId = :userId AND n.readAt IS NULL AND n.id IN :ids")
+    int markRead(@org.springframework.data.repository.query.Param("userId") long userId,
+            @org.springframework.data.repository.query.Param("ids") java.util.Collection<Long> ids,
+            @org.springframework.data.repository.query.Param("now") java.time.Instant now);
 }

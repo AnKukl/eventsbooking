@@ -20,6 +20,7 @@ public record NotificationPreferencesRequest(
 
     /** Two entries for the same type would be ambiguous. */
     @AssertTrue(message = "each notification type may appear only once")
+    @com.fasterxml.jackson.annotation.JsonIgnore
     public boolean isTypesUnique() {
         return preferences == null
                 || preferences.stream().filter(item -> item != null).map(Item::type).distinct().count()
