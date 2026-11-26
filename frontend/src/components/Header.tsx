@@ -29,7 +29,7 @@ export function Header({ initial }: { initial?: string }) {
         <span className={styles.wordmark}>Events Booking</span>
       </Link>
       <div className={styles.actions}>
-        <form role="search" onSubmit={onSubmit}>
+        <form role="search" className={styles.searchForm} onSubmit={onSubmit}>
           <input
             className={styles.search}
             type="search"

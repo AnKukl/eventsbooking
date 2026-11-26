@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { AuthPage } from './AuthPage'
+import { AuthPage, target } from './AuthPage'
 import { QUOTES } from './quotes'
 import { mockApi, renderAt } from '../../test/render'
 
@@ -46,6 +46,24 @@ describe('AuthPage (S-auth)', () => {
     expect(calls).toContainEqual({
       method: 'POST', path: '/api/auth/login', body: { email: 'anna@example.com', password: 'correct-horse' },
     })
+  })
+
+  it('signs in and follows ?returnTo', async () => {
+    mockApi({ 'POST /api/auth/login': { body: { expiresIn: 900 } } })
+    renderAt('/login', <AuthPage mode="login" />, '/login?returnTo=%2Fevents%2F5')
+
+    await fill('anna@example.com', 'correct-horse')
+    await userEvent.click(screen.getByRole('button', { name: 'Войти' }))
+
+    await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent('/events/5'))
+  })
+
+  it('returnTo only accepts a path of this site', () => {
+    expect(target('?returnTo=%2Faccount', null)).toBe('/account')
+    expect(target('?returnTo=https%3A%2F%2Fevil.example', null)).toBe('/')
+    expect(target('?returnTo=%2F%2Fevil.example', null)).toBe('/')
+    expect(target('?returnTo=%2F%5Cevil.example', null)).toBe('/')
+    expect(target('', { from: '/map' })).toBe('/map')
   })
 
   it('a wrong password is reported under the button', async () => {

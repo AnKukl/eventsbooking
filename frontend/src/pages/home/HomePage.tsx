@@ -1,38 +1,9 @@
-import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { type EventItem, useToggleFavorite, useUpcomingEvents } from '../../api/events'
-import { useMe } from '../../api/session'
+import { Link } from 'react-router-dom'
+import { type EventItem, useEventsFromToday, useEventsThisWeek } from '../../api/events'
+import { FavoriteButton } from '../../components/FavoriteButton'
 import { price, seatsLeft, seatsText, when, whenTitle } from './format'
+import { arrange } from './select'
 import styles from './HomePage.module.css'
-
-/** ♡ on a photo tile (design/README.md: aria-pressed, aria-label). A guest is sent to sign in first. */
-function FavoriteButton({ event, className }: { event: EventItem; className: string }) {
-  const me = useMe()
-  const toggle = useToggleFavorite()
-  const navigate = useNavigate()
-  const location = useLocation()
-  const pressed = Boolean(event.isFavorite)
-
-  function onClick() {
-    if (!me.data) {
-      navigate('/login', { state: { from: location.pathname + location.search } })
-      return
-    }
-    toggle.mutate({ id: event.id!, favorite: !pressed })
-  }
-
-  return (
-    <button
-      type="button"
-      className={`fav-btn ${className}`}
-      aria-label={pressed ? 'Убрать из избранного' : 'Добавить в избранное'}
-      aria-pressed={pressed}
-      disabled={toggle.isPending}
-      onClick={onClick}
-    >
-      {pressed ? '♥' : '♡'}
-    </button>
-  )
-}
 
 function Cover({ event }: { event: EventItem }) {
   return event.coverUrl ? <img className={styles.cover} src={event.coverUrl} alt={event.title ?? ''} /> : null
@@ -52,7 +23,7 @@ function BigTile({ event }: { event: EventItem }) {
           <Link to={`/events/${event.id}`}>{event.title}</Link>
         </h2>
         <div className={styles.bigRow}>
-          <span>{left > 0 ? `Осталось ${seatsText(left)}` : 'Мест нет'}</span>
+          <span>{left > 0 ? `Осталось ${seatsText(left)}` : ''}</span>
           {event.seatStatus === 'SOLD_OUT' ? (
             <button type="button" className={styles.bookDisabled} disabled>
               Мест нет
@@ -65,7 +36,7 @@ function BigTile({ event }: { event: EventItem }) {
         </div>
       </div>
       {chip && <span className={`price-chip ${styles.chipBig}`}>{chip}</span>}
-      <FavoriteButton event={event} className={styles.favBig} />
+      <FavoriteButton event={event} className={`fav-btn ${styles.favBig}`} />
     </article>
   )
 }
@@ -85,7 +56,7 @@ function SmallTile({ event, place }: { event: EventItem; place: string }) {
         </div>
       </div>
       {chip && <span className={`price-chip ${styles.chipSmall}`}>{chip}</span>}
-      <FavoriteButton event={event} className={styles.favSmall} />
+      <FavoriteButton event={event} className={`fav-btn ${styles.favSmall}`} />
     </article>
   )
 }
@@ -106,38 +77,70 @@ function WeekCard({ event }: { event: EventItem }) {
 
 const SMALL = [styles.small1, styles.small2, styles.small3]
 
+/** Placeholders of the same shape while the catalogue loads. */
+function Skeleton() {
+  return (
+    <div className={styles.grid} aria-busy="true" aria-label="Загружаем события">
+      <div className={`photo ${styles.tile} ${styles.big} ${styles.skeleton}`} />
+      {SMALL.map((place) => (
+        <div key={place} className={`photo ${styles.tile} ${place} ${styles.skeleton}`} />
+      ))}
+      <div className={`${styles.solid} ${styles.nearby} ${styles.skeleton}`} />
+      <div className={`${styles.stripBox} ${styles.strip} ${styles.skeleton}`} />
+    </div>
+  )
+}
+
+function Nearby() {
+  return (
+    <div className={`${styles.solid} ${styles.nearby}`}>
+      <span className={styles.solidLabel}>Сегодня рядом</span>
+      <span className={styles.solidTitle}>Что успеть до 21:00</span>
+      <Link to="/map" className={styles.map}>
+        Открыть карту
+      </Link>
+    </div>
+  )
+}
+
 /** The approved home page: design/pages/D-bento. */
 export function HomePage() {
-  const events = useUpcomingEvents(20)
+  const fromToday = useEventsFromToday(20)
+  const week = useEventsThisWeek(12)
 
-  if (events.isPending) return <p className={styles.status}>Загружаем события…</p>
-  if (events.isError) return <p className={styles.status} role="alert">Не удалось загрузить события. Обновите страницу.</p>
+  if (fromToday.isPending || week.isPending) return <Skeleton />
+  if (fromToday.isError || week.isError) {
+    return (
+      <div className={styles.status} role="alert">
+        <p>Не удалось загрузить события.</p>
+        <button
+          type="button"
+          className="btn-primary"
+          onClick={() => {
+            void fromToday.refetch()
+            void week.refetch()
+          }}
+        >
+          Повторить
+        </button>
+      </div>
+    )
+  }
 
-  const now = Date.now()
-  const upcoming = (events.data.content ?? []).filter((event) => new Date(event.startsAt!).getTime() >= now)
-  if (upcoming.length === 0) return <p className={styles.status}>Скоро здесь появятся события.</p>
+  const events = fromToday.data.content ?? []
+  if (events.length === 0) return <p className={styles.status}>Скоро здесь появятся события.</p>
 
-  const [first, ...rest] = upcoming
-  const tiles = rest.slice(0, 3)
-  const week = rest.slice(3, 6)
-  const more = Math.max(0, (events.data.page?.totalElements ?? upcoming.length) - 1 - tiles.length - week.length)
+  const { big, tiles, weekCards, more } = arrange(events, week.data.content ?? [], week.data.page?.totalElements ?? 0)
 
   return (
     <div className={styles.grid}>
-      <BigTile event={first} />
+      <BigTile event={big!} />
       {tiles.map((event, index) => (
         <SmallTile key={event.id} event={event} place={SMALL[index]} />
       ))}
+      <Nearby />
 
-      <div className={`${styles.solid} ${styles.nearby}`}>
-        <span className={styles.solidLabel}>Сегодня рядом</span>
-        <span className={styles.solidTitle}>Что успеть до 21:00</span>
-        <Link to="/map" className={styles.map}>
-          Открыть карту
-        </Link>
-      </div>
-
-      {week.length > 0 && (
+      {weekCards.length > 0 && (
         <section className={`${styles.stripBox} ${styles.strip}`} aria-labelledby="week-title">
           <div className={styles.stripHead}>
             <span className={styles.stripLabel}>Скоро</span>
@@ -145,12 +148,14 @@ export function HomePage() {
               В эту неделю
             </h2>
             <Link to="/events?when=week" className={styles.stripLink}>
-              {more > 0 ? `Ещё ${more} ${seatsWord(more)} · все →` : 'Все события →'}
+              {more > 0 ? `Ещё ${more} ${eventsWord(more)} · все →` : 'Все события →'}
             </Link>
           </div>
-          {week.map((event) => (
-            <WeekCard key={event.id} event={event} />
-          ))}
+          <div className={styles.weekCards}>
+            {weekCards.map((event) => (
+              <WeekCard key={event.id} event={event} />
+            ))}
+          </div>
         </section>
       )}
     </div>
@@ -158,7 +163,7 @@ export function HomePage() {
 }
 
 /** "событие", "события", "событий" */
-function seatsWord(count: number): string {
+function eventsWord(count: number): string {
   if (count % 10 === 1 && count % 100 !== 11) return 'событие'
   if ([2, 3, 4].includes(count % 10) && ![12, 13, 14].includes(count % 100)) return 'события'
   return 'событий'

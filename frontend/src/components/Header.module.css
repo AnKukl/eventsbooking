@@ -25,6 +25,14 @@
   display: flex;
   gap: 12px;
   align-items: center;
+  justify-content: flex-end;
+  flex: 1;
+  min-width: 0;
+}
+
+/* the field is 340 px on the board and shrinks on a phone instead of pushing the page wider */
+.searchForm {
+  flex: 0 1 340px;
   min-width: 0;
 }
 
@@ -32,8 +40,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  width: 340px;
-  max-width: 100%;
+  width: 100%;
   padding: 10px 16px;
   border-radius: var(--radius-pill);
   background: var(--search-bg);

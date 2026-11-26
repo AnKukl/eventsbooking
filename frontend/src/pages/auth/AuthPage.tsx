@@ -27,10 +27,13 @@ const TEXT: Record<Mode, { title: string; submit: string }> = {
   register: { title: 'Регистрация', submit: 'Зарегистрироваться' },
 }
 
-/** Where to go after signing in: the page the guest came from (state.from), else the home page. */
-function target(state: unknown): string {
-  const from = (state as { from?: string } | null)?.from
-  return from && from.startsWith('/') && !from.startsWith('//') ? from : '/'
+/**
+ * Where to go after signing in: ?returnTo=… (or the router state), else the home page. Only a path of this site is
+ * accepted, so a crafted link cannot send the user to another site after login.
+ */
+export function target(search: string, state: unknown): string {
+  const from = new URLSearchParams(search).get('returnTo') ?? (state as { from?: string } | null)?.from
+  return from && from.startsWith('/') && !from.startsWith('//') && !from.startsWith('/\\') ? from : '/'
 }
 
 function problemMessage(error: unknown, mode: Mode): string {
@@ -70,7 +73,7 @@ export function AuthPage({ mode }: { mode: Mode }) {
     }
     setFieldErrors({})
     action.mutate(parsed.data, {
-      onSuccess: () => navigate(target(location.state), { replace: true }),
+      onSuccess: () => navigate(target(location.search, location.state), { replace: true }),
       onError: (error) => {
         // 400 from the server: show its messages next to the fields
         if (error instanceof ApiError && error.status === 400 && error.problem?.errors?.length) {
@@ -105,7 +108,7 @@ export function AuthPage({ mode }: { mode: Mode }) {
         </Link>
         <nav className={styles.tabs} aria-label="Вход или регистрация">
           <Link
-            to="/login"
+            to={{ pathname: '/login', search: location.search }}
             state={location.state}
             replace
             className={`${styles.tab} ${mode === 'login' ? styles.tabActive : ''}`}
@@ -114,7 +117,7 @@ export function AuthPage({ mode }: { mode: Mode }) {
             Вход
           </Link>
           <Link
-            to="/register"
+            to={{ pathname: '/register', search: location.search }}
             state={location.state}
             replace
             className={`${styles.tab} ${mode === 'register' ? styles.tabActive : ''}`}

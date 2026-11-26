@@ -181,4 +181,12 @@ h1, h2, h3, .display {
   --strip-title: #F3E7D6;                   /* "В эту неделю"; the link on hover (E-buttons) */
   --strip-link: #CDB79C;                    /* "все →" */
   --disabled-bg: #D9C7AE;                   /* "Мест нет" (E-buttons) */
+
+  /* O-event: the "Сохранено в избранное · Отменить" toast */
+  --toast-shadow: 0 10px 20px rgba(20, 12, 6, 0.4);
+  --toast-action: #E9A07F;
+
+  /* K-favorites */
+  --empty-border: 1px dashed #9C8464;       /* the hint card where the list ends */
+  --ink-soft: #5A4632;                      /* the hint text; "← Все события" (O-event) */
 }

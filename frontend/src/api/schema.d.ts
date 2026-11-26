@@ -1005,6 +1005,8 @@ export interface operations {
         parameters: {
             query: {
                 pageable: components["schemas"]["Pageable"];
+                from?: string;
+                to?: string;
             };
             header?: never;
             path?: never;
