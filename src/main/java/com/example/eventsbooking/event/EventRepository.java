@@ -6,17 +6,11 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-public interface EventRepository extends JpaRepository<Event, Long> {
+public interface EventRepository extends JpaRepository<Event, Long>,
+        org.springframework.data.jpa.repository.JpaSpecificationExecutor<Event> {
 
     /** The public catalog: only published events. */
     Page<Event> findByStatus(EventStatus status, Pageable pageable);
-
-    /** The public catalog from a moment on (the home page: from today). */
-    Page<Event> findByStatusAndStartsAtGreaterThanEqual(EventStatus status, java.time.Instant from, Pageable pageable);
-
-    /** The public catalog in a window [from, to) (the home page: this week). */
-    Page<Event> findByStatusAndStartsAtGreaterThanEqualAndStartsAtLessThan(EventStatus status, java.time.Instant from,
-            java.time.Instant to, Pageable pageable);
 
     boolean existsByIdAndStatus(long id, EventStatus status);
 

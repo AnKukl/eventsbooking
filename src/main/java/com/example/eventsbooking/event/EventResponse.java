@@ -18,11 +18,14 @@ public record EventResponse(
         String venue,
         java.math.BigDecimal price,
         /* the first picture of the event (its cover), or null */
-        String coverUrl) {
+        String coverUrl,
+        java.math.BigDecimal latitude,
+        java.math.BigDecimal longitude) {
 
     public static EventResponse from(Event event, boolean favorite, String coverUrl) {
         return new EventResponse(event.getId(), event.getTitle(), event.getDescription(),
                 event.getShortDescription(), event.getStartsAt(), event.getCapacity(), event.getBookedCount(), event.getOrganizerId(),
-                event.seatStatus(), favorite, event.getVenue(), event.getPrice(), coverUrl);
+                event.seatStatus(), favorite, event.getVenue(), event.getPrice(), coverUrl,
+                event.getLatitude(), event.getLongitude());
     }
 }

@@ -87,6 +87,11 @@ public class Event {
     @Column(precision = 10, scale = 2)
     private BigDecimal price;
 
+    /** Where the event is on the map (both or neither). */
+    private BigDecimal latitude;
+
+    private BigDecimal longitude;
+
     @Column(nullable = false)
     private boolean waitlistEnabled = true;
 
@@ -168,6 +173,22 @@ public class Event {
         if (waitlistEnabled != null) {
             this.waitlistEnabled = waitlistEnabled;
         }
+    }
+
+    /** Sets the point on the map; {@code null} for both keeps the current one. Callers check that both come together. */
+    public void locate(BigDecimal latitude, BigDecimal longitude) {
+        if (latitude != null && longitude != null) {
+            this.latitude = latitude;
+            this.longitude = longitude;
+        }
+    }
+
+    public BigDecimal getLatitude() {
+        return latitude;
+    }
+
+    public BigDecimal getLongitude() {
+        return longitude;
     }
 
     public void bumpRevision() {

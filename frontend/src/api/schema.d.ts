@@ -458,6 +458,8 @@ export interface components {
             bookedCount?: number;
             venue?: string;
             price?: number;
+            latitude?: number;
+            longitude?: number;
             waitlistEnabled?: boolean;
             /** @enum {string} */
             status?: "DRAFT" | "PUBLISHED" | "SOLD_OUT" | "CANCELLED";
@@ -522,6 +524,8 @@ export interface components {
             venue?: string;
             price?: number;
             coverUrl?: string;
+            latitude?: number;
+            longitude?: number;
         };
         OrganizerEventCreateRequest: {
             title: string;
@@ -536,6 +540,8 @@ export interface components {
             waitlistEnabled?: boolean;
             audienceFit?: string[];
             audienceNotFit?: string[];
+            latitude?: number;
+            longitude?: number;
         };
         EmailChangeRequest: {
             /** Format: email */
@@ -579,7 +585,6 @@ export interface components {
             email: string;
             password: string;
             inviteCode?: string;
-            passwordWithin72Bytes?: boolean;
         };
         UserResponse: {
             /** Format: int64 */
@@ -614,6 +619,8 @@ export interface components {
             waitlistEnabled?: boolean;
             audienceFit?: string[];
             audienceNotFit?: string[];
+            latitude?: number;
+            longitude?: number;
         };
         ProfileUpdateRequest: {
             name?: string;
@@ -1033,6 +1040,9 @@ export interface operations {
                 pageable: components["schemas"]["Pageable"];
                 from?: string;
                 to?: string;
+                q?: string;
+                maxPrice?: number;
+                city?: string;
             };
             header?: never;
             path?: never;

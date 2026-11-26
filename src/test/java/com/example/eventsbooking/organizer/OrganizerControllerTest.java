@@ -159,6 +159,10 @@ class OrganizerControllerTest {
         assertRejected(json(post("/api/organizer/events"), createBody("\"venue\":\"" + "v".repeat(201) + "\"")), "venue");
         assertRejected(json(post("/api/organizer/events"), createBody("\"shortDescription\":\"" + "s".repeat(161) + "\"")), "shortDescription");
         assertRejected(json(post("/api/organizer/events"), createBody("\"audienceFit\":[\"1\",\"2\",\"3\",\"4\",\"5\"]")), "audienceFit");
+        // a place on the map needs both coordinates, inside their ranges
+        assertRejected(json(post("/api/organizer/events"), createBody("\"latitude\":54.44")), "location");
+        assertRejected(json(post("/api/organizer/events"), createBody("\"latitude\":91,\"longitude\":18.5")), "latitude");
+        assertRejected(json(post("/api/organizer/events"), createBody("\"latitude\":54.4,\"longitude\":181")), "longitude");
     }
 
     @Test
@@ -360,7 +364,7 @@ class OrganizerControllerTest {
     }
 
     private static OrganizerEventResponse response(long id, OrganizerEventStatus status) {
-        return new OrganizerEventResponse(id, "Jazz night", null, null, Instant.parse(FUTURE), 50, 0, null, null, true,
+        return new OrganizerEventResponse(id, "Jazz night", null, null, Instant.parse(FUTURE), 50, 0, null, null, null, null, true,
                 status, 0L, List.of(), List.of(), List.of());
     }
 }

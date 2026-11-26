@@ -119,6 +119,63 @@ class EventCatalogFieldsIntegrationTest {
                 .andExpect(status().isBadRequest());
     }
 
+    @Test
+    void searchFindsByTitleDescriptionOrVenueIgnoringCase() throws Exception {
+        long jazz = searchable("Вечер ДЖАЗА на вилле", "Живая музыка", "Villa Sedan, Gdynia", "45.00");
+        long trio = searchable("Late set", "Джаз-трио у камина", "Grand Cafe, Sopot", "18.00");
+        long lecture = searchable("Маяки Балтики", "Лекция", "Музей, Gdańsk", "0.00");
+
+        mockMvc.perform(get("/api/events").param("q", "джаз").param("size", "100"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[?(@.id == " + jazz + ")]").isNotEmpty())
+                .andExpect(jsonPath("$.content[?(@.id == " + trio + ")]").isNotEmpty())
+                .andExpect(jsonPath("$.content[?(@.id == " + lecture + ")]").isEmpty());
+        mockMvc.perform(get("/api/events").param("q", "grand cafe").param("size", "100"))
+                .andExpect(jsonPath("$.content[?(@.id == " + trio + ")]").isNotEmpty())
+                .andExpect(jsonPath("$.content[?(@.id == " + jazz + ")]").isEmpty());
+        mockMvc.perform(get("/api/events").param("q", "100%_").param("size", "100"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[?(@.id == " + jazz + ")]").isEmpty());
+    }
+
+    @Test
+    void maxPriceAndCityNarrowTheCatalogue() throws Exception {
+        long cheap = searchable("Квиз", "Бар", "Stara Bramka, Sopot", "12.00");
+        long dear = searchable("Дегустация", "Ужин", "Kuchnia, Sopot", "65.00");
+        long free = searchable("Лекция", "Бесплатно", "Muzeum, Gdańsk", "0.00");
+
+        mockMvc.perform(get("/api/events").param("maxPrice", "30").param("size", "100"))
+                .andExpect(jsonPath("$.content[?(@.id == " + cheap + ")]").isNotEmpty())
+                .andExpect(jsonPath("$.content[?(@.id == " + free + ")]").isNotEmpty())
+                .andExpect(jsonPath("$.content[?(@.id == " + dear + ")]").isEmpty());
+        mockMvc.perform(get("/api/events").param("city", "sopot").param("maxPrice", "30").param("size", "100"))
+                .andExpect(jsonPath("$.content[?(@.id == " + cheap + ")]").isNotEmpty())
+                .andExpect(jsonPath("$.content[?(@.id == " + free + ")]").isEmpty());
+        long russian = searchable("Концерт", "Зал", "Филармония, Сопот", "20.00");
+        mockMvc.perform(get("/api/events").param("city", "Sopot,Сопот").param("size", "100"))
+                .andExpect(jsonPath("$.content[?(@.id == " + cheap + ")]").isNotEmpty())
+                .andExpect(jsonPath("$.content[?(@.id == " + russian + ")]").isNotEmpty())
+                .andExpect(jsonPath("$.content[?(@.id == " + free + ")]").isEmpty());
+        mockMvc.perform(get("/api/events").param("maxPrice", "-1")).andExpect(status().isBadRequest());
+        mockMvc.perform(get("/api/events").param("q", "x".repeat(101))).andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void theCatalogueShowsWhereTheEventIsOnTheMap() throws Exception {
+        long id = searchable("На карте", "d", "Monte Cassino, Sopot", "10.00");
+        jdbc.update("update events set latitude = 54.441800, longitude = 18.560100 where id = ?", id);
+
+        mockMvc.perform(get("/api/events/" + id))
+                .andExpect(jsonPath("$.latitude").value(54.4418))
+                .andExpect(jsonPath("$.longitude").value(18.5601));
+    }
+
+    private long searchable(String title, String shortDescription, String venue, String price) {
+        jdbc.update("insert into events (title, short_description, starts_at, capacity, organizer_id, venue, price) "
+                + "values (?, ?, now() + interval '5 days', 20, 1, ?, ?::numeric)", title, shortDescription, venue, price);
+        return jdbc.queryForObject("select max(id) from events", Long.class);
+    }
+
     private long eventAt(String title, String startsAtSql) {
         jdbc.update("insert into events (title, starts_at, capacity, organizer_id) values (?, " + startsAtSql + ", 20, 1)",
                 title);

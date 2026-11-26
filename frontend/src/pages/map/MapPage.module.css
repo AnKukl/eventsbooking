@@ -1,0 +1,219 @@
+/* design/pages/H-map */
+.tabs {
+  display: flex;
+  gap: 6px;
+  background: var(--tabs-bg);
+  padding: 4px;
+  border-radius: var(--radius-pill);
+  width: fit-content;
+  margin-bottom: 18px;
+}
+
+.tab {
+  padding: 8px 16px;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--ink);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.tab[aria-pressed='true'] {
+  background: var(--dark);
+  color: var(--card);
+}
+
+.area {
+  position: relative;
+  height: 640px;
+  border-radius: var(--radius-3xl);
+  overflow: hidden;
+  background: var(--map-bg);
+  box-shadow: var(--inset-line);
+}
+
+.map {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.glass {
+  position: absolute;
+  z-index: 500;
+  background: var(--glass);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  border: var(--glass-border);
+  border-radius: var(--radius-xl);
+  color: var(--ink);
+  box-shadow: var(--glass-shadow);
+}
+
+.search {
+  left: 24px;
+  top: 24px;
+  width: 300px;
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.small {
+  font-size: 12px;
+  color: var(--ink-subtle);
+}
+
+.where {
+  font-family: var(--font-display);
+  font-size: 22px;
+  margin: 0;
+  font-weight: 400;
+}
+
+.input {
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--input-border);
+  background: var(--white);
+  font: inherit;
+  font-size: 14px;
+  width: 100%;
+}
+
+.selected {
+  right: 24px;
+  bottom: 24px;
+  width: 380px;
+  max-width: calc(100% - 48px);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.selWhen {
+  font-size: 12px;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.selTitle {
+  font-family: var(--font-display);
+  font-size: 24px;
+}
+
+.selMeta {
+  font-size: 14px;
+  color: var(--ink-subtle);
+}
+
+.selButtons {
+  display: flex;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.book {
+  flex: 1;
+  padding: 12px;
+  background: var(--dark);
+  color: var(--on-dark);
+  border: none;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  text-align: center;
+  text-decoration: none;
+}
+
+.route {
+  padding: 12px 14px;
+  border: 1px solid var(--ink);
+  background: transparent;
+  color: var(--ink);
+  border-radius: var(--radius-sm);
+  text-decoration: none;
+}
+
+/* the numbered pins (inside Leaflet markers) */
+.pin {
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-circle);
+  background: var(--dark);
+  color: var(--card);
+  font-weight: 600;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--pin-shadow);
+  font-family: var(--font-text);
+}
+
+.pinSelected {
+  width: 40px;
+  height: 40px;
+  background: var(--accent);
+}
+
+.notice {
+  font-size: 14px;
+  color: var(--ink-soft);
+  margin: 0 0 12px;
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.item {
+  background: var(--card);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  box-shadow: var(--card-shadow);
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.itemNumber {
+  flex: 0 0 auto;
+}
+
+.itemBody {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 14px;
+  min-width: 0;
+}
+
+.itemTitle {
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.itemMeta {
+  color: var(--ink-muted);
+}
+
+.status {
+  padding: 24px 0;
+}
+
+@media (max-width: 900px) {
+  .area { height: 520px; }
+  .search { left: 12px; right: 12px; top: 12px; width: auto; }
+  .selected { right: 12px; left: 12px; bottom: 12px; width: auto; max-width: none; }
+  .list { grid-template-columns: minmax(0, 1fr); }
+}

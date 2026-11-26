@@ -93,7 +93,7 @@ class EventControllerTest {
 
     @Test
     void listPassesPageableToServiceAndReturnsPage() throws Exception {
-        when(service.list(any(), any(), any(Pageable.class)))
+        when(service.list(any(EventFilter.class), any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(event(1L), event(2L)), PageRequest.of(0, 10), 2));
 
         mockMvc.perform(get("/api/events").param("page", "0").param("size", "10"))
@@ -104,7 +104,7 @@ class EventControllerTest {
                 .andExpect(jsonPath("$.page.totalElements").value(2));
 
         ArgumentCaptor<Pageable> captor = ArgumentCaptor.forClass(Pageable.class);
-        verify(service).list(org.mockito.ArgumentMatchers.isNull(), org.mockito.ArgumentMatchers.isNull(), captor.capture());
+        verify(service).list(org.mockito.ArgumentMatchers.eq(EventFilter.NONE), captor.capture());
         assertThat(captor.getValue().getPageNumber()).isZero();
         assertThat(captor.getValue().getPageSize()).isEqualTo(10);
     }
@@ -149,7 +149,7 @@ class EventControllerTest {
 
     @Test
     void listMarksOnlyTheFavoredEventsWithOneLookupForThePage() throws Exception {
-        when(service.list(any(), any(), any(Pageable.class)))
+        when(service.list(any(EventFilter.class), any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(event(1L), event(2L)), PageRequest.of(0, 10), 2));
         when(favorites.favoriteEventIds(eq(7L), eq(List.of(1L, 2L)))).thenReturn(java.util.Set.of(2L));
 
@@ -337,7 +337,7 @@ class EventControllerTest {
 
     @Test
     void listAllowsSortingByStartsAtTitleAndCapacity() throws Exception {
-        when(service.list(any(), any(), any(Pageable.class))).thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 20), 0));
+        when(service.list(any(EventFilter.class), any(Pageable.class))).thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 20), 0));
 
         for (String ok : List.of("startsAt,desc", "title", "capacity,asc", "id")) {
             mockMvc.perform(get("/api/events").param("sort", ok)).andExpect(status().isOk());

@@ -127,7 +127,7 @@ class EventServiceTest {
         when(repository.findById(99L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.delete(99L, 1L)).isInstanceOf(EventNotFoundException.class);
-        verify(repository, never()).delete(any());
+        verify(repository, never()).delete(any(Event.class));
     }
 
     // ---------- ownership: only the organizer who created an event may change it ----------
@@ -152,7 +152,7 @@ class EventServiceTest {
         assertThatThrownBy(() -> service.delete(1L, 2L))
                 .isInstanceOf(org.springframework.security.access.AccessDeniedException.class);
 
-        verify(repository, never()).delete(any());
+        verify(repository, never()).delete(any(Event.class));
     }
 
     // ---------- preview fields ----------

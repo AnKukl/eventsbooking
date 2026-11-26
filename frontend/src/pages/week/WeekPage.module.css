@@ -1,0 +1,110 @@
+/* design/pages/J-week */
+.head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.titles { display: flex; flex-direction: column; gap: 6px; }
+
+.label {
+  font-size: 12px;
+  color: var(--label-brown);
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+}
+
+.title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 40px;
+}
+
+.chips { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.chip {
+  padding: 8px 14px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--ink);
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.chip[aria-pressed='true'] {
+  background: var(--dark);
+  border-color: var(--dark);
+  color: var(--on-dark);
+}
+
+.days {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  align-content: start;
+}
+
+.day {
+  background: var(--card);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  color: var(--ink);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: var(--card-shadow);
+}
+
+.dayName {
+  font-family: var(--font-display);
+  font-size: 22px;
+  margin: 0;
+  font-weight: 400;
+}
+
+.event {
+  background: var(--white);
+  border-radius: var(--radius-md);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.event:hover { box-shadow: var(--inset-line); }
+
+.eventMeta { color: var(--ink-muted); }
+
+.foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-top: 20px;
+  font-size: 14px;
+  color: var(--ink-soft);
+  flex-wrap: wrap;
+}
+
+.more {
+  padding: 10px 16px;
+  border: 1px solid var(--ink);
+  background: transparent;
+  color: var(--ink);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.status { padding: 24px 0; }
+
+@media (max-width: 1000px) { .days { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 600px) { .days { grid-template-columns: minmax(0, 1fr); } .title { font-size: 30px; } }

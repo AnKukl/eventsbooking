@@ -18,6 +18,8 @@ public record OrganizerEventResponse(
         int bookedCount,
         String venue,
         BigDecimal price,
+        BigDecimal latitude,
+        BigDecimal longitude,
         boolean waitlistEnabled,
         OrganizerEventStatus status,
         long version,
@@ -29,7 +31,7 @@ public record OrganizerEventResponse(
     static OrganizerEventResponse from(Event event) {
         return new OrganizerEventResponse(event.getId(), event.getTitle(), event.getDescription(),
                 event.getShortDescription(), event.getStartsAt(), event.getCapacity(), event.getBookedCount(),
-                event.getVenue(), event.getPrice(), event.isWaitlistEnabled(), OrganizerEventStatus.of(event),
+                event.getVenue(), event.getPrice(), event.getLatitude(), event.getLongitude(), event.isWaitlistEnabled(), OrganizerEventStatus.of(event),
                 event.getRevision(), event.getAudienceFit(), event.getAudienceNotFit(),
                 event.getMedia().stream().map(media -> new MediaResponse(media.url(), media.alt())).toList());
     }

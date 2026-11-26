@@ -1,5 +1,5 @@
-import { type FormEvent, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { type FormEvent, useEffect, useState } from 'react'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { z } from 'zod'
 import { Logo } from './Logo'
 import styles from './Header.module.css'
@@ -14,12 +14,22 @@ const searchSchema = z.string().trim().min(1).max(100)
  */
 export function Header({ initial }: { initial?: string }) {
   const navigate = useNavigate()
+  const location = useLocation()
   const [query, setQuery] = useState('')
+
+  // on the search page the field shows the query of the URL (a shared link, the back button)
+  useEffect(() => {
+    if (location.pathname === '/search') setQuery(new URLSearchParams(location.search).get('q') ?? '')
+  }, [location.pathname, location.search])
 
   function onSubmit(event: FormEvent) {
     event.preventDefault()
     const parsed = searchSchema.safeParse(query)
-    if (parsed.success) navigate(`/search?q=${encodeURIComponent(parsed.data)}`)
+    if (!parsed.success) return
+    // keep the other filters of the search page, change only the words
+    const params = new URLSearchParams(location.pathname === '/search' ? location.search : '')
+    params.set('q', parsed.data)
+    navigate(`/search?${params}`)
   }
 
   return (

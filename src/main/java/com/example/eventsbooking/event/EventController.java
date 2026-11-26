@@ -78,10 +78,18 @@ class EventController {
             @org.springframework.web.bind.annotation.RequestParam(required = false)
             @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME)
             java.time.Instant to,
+            @org.springframework.web.bind.annotation.RequestParam(required = false) String q,
+            @org.springframework.web.bind.annotation.RequestParam(required = false) java.math.BigDecimal maxPrice,
+            @org.springframework.web.bind.annotation.RequestParam(required = false) String city,
             Principal principal) {
         if (from != null && to != null && !from.isBefore(to)) {
-            throw new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST,
-                    "'from' must be before 'to'");
+            throw badRequest("'from' must be before 'to'");
+        }
+        if (maxPrice != null && maxPrice.signum() < 0) {
+            throw badRequest("'maxPrice' must not be negative");
+        }
+        if ((q != null && q.length() > 100) || (city != null && city.length() > 100)) {
+            throw badRequest("'q' and 'city' are at most 100 characters");
         }
         pageable.getSort().forEach(order -> {
             if (!SORTABLE.contains(order.getProperty())) {
@@ -90,7 +98,7 @@ class EventController {
                         "Unsupported sort property: " + order.getProperty() + ". Allowed: " + new java.util.TreeSet<>(SORTABLE));
             }
         });
-        Page<Event> page = service.list(from, to, pageable);
+        Page<Event> page = service.list(new EventFilter(from, to, q, maxPrice, city), pageable);
         // one lookup for the whole page, not one per event
         List<Long> ids = page.getContent().stream().map(Event::getId).toList();
         Set<Long> favored = favorites.favoriteEventIds(CurrentUser.idOrNull(principal), ids);
@@ -115,5 +123,9 @@ class EventController {
 
     private String coverOf(Long eventId) {
         return eventId == null ? null : covers.coverUrls(List.of(eventId)).get(eventId);
+    }
+
+    private static org.springframework.web.server.ResponseStatusException badRequest(String reason) {
+        return new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST, reason);
     }
 }

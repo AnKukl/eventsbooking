@@ -51,7 +51,7 @@ class OrganizerEventServiceTest {
         when(events.save(any(Event.class))).thenAnswer(returnsFirstArg());
 
         OrganizerEventResponse created = service.create(new OrganizerEventCreateRequest("Jazz night", "Live", LATER, 50,
-                null, null, null, null, null, null), 7L);
+                null, null, null, null, null, null, null, null), 7L);
 
         assertThat(created.status()).isEqualTo(OrganizerEventStatus.DRAFT);
         assertThat(created.title()).isEqualTo("Jazz night");
@@ -71,7 +71,7 @@ class OrganizerEventServiceTest {
         when(events.save(any(Event.class))).thenAnswer(returnsFirstArg());
 
         OrganizerEventResponse created = service.create(new OrganizerEventCreateRequest("Jazz", null, LATER, 10,
-                "Short pitch", "Main hall", new BigDecimal("19.90"), false, List.of("Fans"), List.of("Kids")), 7L);
+                "Short pitch", "Main hall", new BigDecimal("19.90"), false, List.of("Fans"), List.of("Kids"), null, null), 7L);
 
         assertThat(created.shortDescription()).isEqualTo("Short pitch");
         assertThat(created.venue()).isEqualTo("Main hall");
@@ -106,7 +106,7 @@ class OrganizerEventServiceTest {
         Event event = event(7L, EventStatus.DRAFT);
 
         OrganizerEventResponse updated = service.update(5L, new OrganizerEventUpdateRequest(0L, "Renamed", null, null,
-                null, null, "Hall A", new BigDecimal("10"), null, null, null), 7L);
+                null, null, "Hall A", new BigDecimal("10"), null, null, null, null, null), 7L);
 
         assertThat(updated.title()).isEqualTo("Renamed");
         assertThat(updated.venue()).isEqualTo("Hall A");
@@ -122,7 +122,7 @@ class OrganizerEventServiceTest {
         service.update(5L, update(0L), 7L);   // someone else saved first: the event is at version 1 now
 
         assertThatThrownBy(() -> service.update(5L, new OrganizerEventUpdateRequest(0L, "Mine", null, null, null, null,
-                null, null, null, null, null), 7L)).isInstanceOf(StaleEventVersionException.class);
+                null, null, null, null, null, null, null), 7L)).isInstanceOf(StaleEventVersionException.class);
 
         assertThat(event.getTitle()).isEqualTo("Jazz");
         assertThat(event.getRevision()).isEqualTo(1L);
@@ -134,14 +134,14 @@ class OrganizerEventServiceTest {
         event.book(5);
 
         assertThatThrownBy(() -> service.update(5L, new OrganizerEventUpdateRequest(0L, null, null, null, 3, null,
-                null, null, null, null, null), 7L)).isInstanceOf(ConflictException.class);
+                null, null, null, null, null, null, null), 7L)).isInstanceOf(ConflictException.class);
     }
 
     @Test
     void raisingTheCapacityOfAPublishedEventReleasesTheNewSeatsToTheWaitlist() {
         event(7L, EventStatus.PUBLISHED);
 
-        service.update(5L, new OrganizerEventUpdateRequest(0L, null, null, null, 23, null, null, null, null, null, null), 7L);
+        service.update(5L, new OrganizerEventUpdateRequest(0L, null, null, null, 23, null, null, null, null, null, null, null, null), 7L);
 
         var captor = ArgumentCaptor.forClass(SeatReleased.class);
         verify(spring).publishEvent(captor.capture());
@@ -153,7 +153,7 @@ class OrganizerEventServiceTest {
     void aDraftHasNoWaitlistToTell() {
         event(7L, EventStatus.DRAFT);
 
-        service.update(5L, new OrganizerEventUpdateRequest(0L, null, null, null, 30, null, null, null, null, null, null), 7L);
+        service.update(5L, new OrganizerEventUpdateRequest(0L, null, null, null, 30, null, null, null, null, null, null, null, null), 7L);
 
         verify(spring, never()).publishEvent(any(Object.class));
     }
@@ -255,7 +255,7 @@ class OrganizerEventServiceTest {
     // ---------- helpers ----------
 
     private static OrganizerEventUpdateRequest update(long version) {
-        return new OrganizerEventUpdateRequest(version, null, null, null, null, null, null, null, null, null, null);
+        return new OrganizerEventUpdateRequest(version, null, null, null, null, null, null, null, null, null, null, null, null);
     }
 
     /** Event 5 (capacity 20) of the given organizer, registered in the mock repository. */

@@ -17,8 +17,8 @@ export function useBookingSettings() {
 }
 
 /** One public event; the key lives under "events", so the optimistic heart and seat updates reach it too. */
-export function useEvent(id: number) {
-  return useQuery({ queryKey: ['events', 'one', id], queryFn: () => api<EventItem>(`/api/events/${id}`) })
+export function useEvent(id: number, enabled = true) {
+  return useQuery({ queryKey: ['events', 'one', id], queryFn: () => api<EventItem>(`/api/events/${id}`), enabled })
 }
 
 /** HOLD seats. The Idempotency-Key makes a repeated click (or a retried request) return the same booking. */

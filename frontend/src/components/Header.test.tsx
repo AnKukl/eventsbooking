@@ -44,7 +44,7 @@ describe('Header', () => {
 
     await userEvent.type(screen.getByRole('searchbox'), '  jazz night {enter}')
 
-    expect(screen.getByTestId('location')).toHaveTextContent('/search?q=jazz%20night')
+    expect(screen.getByTestId('location')).toHaveTextContent('/search?q=jazz+night')
   })
 
   it('an empty search goes nowhere', async () => {

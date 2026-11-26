@@ -196,6 +196,14 @@ h1, h2, h3, .display {
   --radius-3xl: 22px;                       /* the event photo */
   --modal-shadow: 0 20px 40px rgba(20, 12, 6, 0.45);
 
+  /* H-map */
+  --map-bg: #E9DCC6;                        /* the map area before the tiles load */
+  --glass-shadow: 0 14px 24px rgba(20, 12, 6, 0.25);
+  --pin-shadow: 0 6px 12px rgba(20, 12, 6, 0.35);
+
+  /* G-search, J-week */
+  --label-brown: #6B5440;                   /* "Результаты", "Неделя 17–23 ноября" */
+
   /* K-favorites */
   --empty-border: 1px dashed #9C8464;       /* the hint card where the list ends */
   --ink-soft: #5A4632;                      /* the hint text; "← Все события" (O-event) */

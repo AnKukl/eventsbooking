@@ -60,6 +60,7 @@ public class OrganizerEventService {
         Event event = Event.draft(request.title(), request.description(), request.startsAt(), request.capacity(),
                 organizerId);
         event.organizerUpdate(null, null, null, null, request.venue(), request.price(), request.waitlistEnabled());
+        event.locate(request.latitude(), request.longitude());
         event.applyPreview(request.shortDescription(), request.audienceFit(), request.audienceNotFit(), null);
         return OrganizerEventResponse.from(events.save(event));
     }
@@ -77,6 +78,7 @@ public class OrganizerEventService {
         int capacityBefore = event.getCapacity();
         event.organizerUpdate(request.title(), request.description(), request.startsAt(), request.capacity(),
                 request.venue(), request.price(), request.waitlistEnabled());
+        event.locate(request.latitude(), request.longitude());
         event.applyPreview(request.shortDescription(), request.audienceFit(), request.audienceNotFit(), null);
         event.bumpRevision();
         int added = event.getCapacity() - capacityBefore;

@@ -18,6 +18,7 @@ public record RegisterRequest(
 
     /** BCrypt only uses the first 72 bytes and Spring rejects longer input, so check bytes, not characters. */
     @AssertTrue(message = "password must be at most 72 bytes in UTF-8")
+    @com.fasterxml.jackson.annotation.JsonIgnore
     public boolean isPasswordWithin72Bytes() {
         return password == null || password.getBytes(StandardCharsets.UTF_8).length <= 72;
     }

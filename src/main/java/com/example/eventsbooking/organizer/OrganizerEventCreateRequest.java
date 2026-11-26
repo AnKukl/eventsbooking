@@ -25,5 +25,14 @@ public record OrganizerEventCreateRequest(
         @DecimalMin("0.00") @Digits(integer = 8, fraction = 2) BigDecimal price,
         Boolean waitlistEnabled,
         @Size(max = 4) List<@NotBlank @Size(max = 100) String> audienceFit,
-        @Size(max = 3) List<@NotBlank @Size(max = 100) String> audienceNotFit) {
+        @Size(max = 3) List<@NotBlank @Size(max = 100) String> audienceNotFit,
+        @jakarta.validation.constraints.DecimalMin("-90") @jakarta.validation.constraints.DecimalMax("90") BigDecimal latitude,
+        @jakarta.validation.constraints.DecimalMin("-180") @jakarta.validation.constraints.DecimalMax("180") BigDecimal longitude) {
+
+    /** A point on the map needs both coordinates (reported as the field "location"). */
+    @jakarta.validation.constraints.AssertTrue(message = "latitude and longitude go together")
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    public boolean isLocation() {
+        return (latitude == null) == (longitude == null);
+    }
 }
