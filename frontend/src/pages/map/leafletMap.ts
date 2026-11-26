@@ -16,7 +16,9 @@ export function createMap(container: HTMLElement, options: {
   onSelect: (id: number) => void
   onTilesFailed: () => void
 }): MapHandle {
-  const map = L.map(container, { zoomControl: true, attributionControl: true }).setView(options.center, 13)
+  const map = L.map(container, { zoomControl: false, attributionControl: true }).setView(options.center, 13)
+  // the top left corner belongs to the search panel of the board
+  L.control.zoom({ position: 'bottomleft' }).addTo(map)
   let loaded = 0
   let failed = 0
   L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
