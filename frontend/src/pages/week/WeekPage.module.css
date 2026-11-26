@@ -90,7 +90,7 @@
   gap: 12px;
   margin-top: 20px;
   font-size: 14px;
-  color: var(--ink-soft);
+  color: var(--ink-label);
   flex-wrap: wrap;
 }
 

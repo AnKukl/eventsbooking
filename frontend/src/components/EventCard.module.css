@@ -23,7 +23,7 @@
 .when {
   font-size: 12px;
   font-weight: 600;
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .whenMuted {
@@ -89,7 +89,7 @@
 }
 
 .book:hover {
-  background: var(--accent);
+  background: var(--accent-text);
   color: var(--card);
 }
 

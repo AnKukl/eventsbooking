@@ -15,6 +15,8 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
+    // Playwright owns e2e/
+    include: ['src/**/*.test.{ts,tsx}'],
     css: true,
     // the first render of a screen (CSS modules, images) is slow on a busy laptop
     testTimeout: 15000,

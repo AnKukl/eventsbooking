@@ -96,7 +96,7 @@
 
 .selWhen {
   font-size: 12px;
-  color: var(--accent);
+  color: var(--accent-text);
   font-weight: 600;
 }
 
@@ -156,12 +156,12 @@
 .pinSelected {
   width: 40px;
   height: 40px;
-  background: var(--accent);
+  background: var(--accent-text);
 }
 
 .notice {
   font-size: 14px;
-  color: var(--ink-soft);
+  color: var(--ink-label);
   margin: 0 0 12px;
 }
 

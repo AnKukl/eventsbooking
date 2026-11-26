@@ -131,7 +131,7 @@
 
 .fieldError {
   font-size: 12px;
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .submit {
@@ -146,7 +146,7 @@
 }
 
 .submit:hover {
-  background: var(--accent);
+  background: var(--accent-text);
   color: var(--card);
 }
 
@@ -159,7 +159,7 @@
 /* the error line of the sign-in window (P-modals) */
 .error {
   font-size: 12px;
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .legal {

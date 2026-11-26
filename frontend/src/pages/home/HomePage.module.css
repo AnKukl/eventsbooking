@@ -100,7 +100,7 @@
 }
 
 .book:hover {
-  background: var(--accent);
+  background: var(--accent-text);
   color: var(--card);
 }
 
@@ -256,7 +256,7 @@
 .weekWhen {
   font-size: 13px;
   font-weight: 600;
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .weekTitle {

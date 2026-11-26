@@ -44,3 +44,9 @@ button {
   white-space: nowrap;
   border: 0;
 }
+
+/* keyboard focus is always visible (a mouse click does not show it) */
+:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: 2px;
+}

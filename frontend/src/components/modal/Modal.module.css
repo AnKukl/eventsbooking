@@ -79,7 +79,7 @@
 
 .danger {
   padding: 12px 18px;
-  background: var(--accent);
+  background: var(--accent-text);
   color: var(--card);
   border: none;
   border-radius: var(--radius-md);
@@ -96,7 +96,7 @@
 
 .error {
   font-size: 13px;
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 /* "Письмо" / "Push" choice */

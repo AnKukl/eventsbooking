@@ -1,5 +1,4 @@
 import type { RouteObject } from 'react-router-dom'
-import { BoardPage } from '../pages/BoardPage'
 import { NotFoundPage } from '../pages/NotFoundPage'
 import { HomePage } from '../pages/home/HomePage'
 import { EventPage } from '../pages/event/EventPage'
@@ -7,10 +6,6 @@ import { BookingPage } from '../pages/event/BookingPage'
 import { SearchPage } from '../pages/search/SearchPage'
 import { WeekPage } from '../pages/week/WeekPage'
 import { MapPage } from '../pages/map/MapPage'
-
-/** The page map of design/README.md for screens not built yet: route → approved board. */
-export const pages: { path: string; title: string; board: string }[] = [
-]
 
 /** Screens inside the common frame (header on top). */
 export const routes: RouteObject[] = [
@@ -20,6 +15,5 @@ export const routes: RouteObject[] = [
   { path: '/events', element: <WeekPage /> },
   { path: '/search', element: <SearchPage /> },
   { path: '/map', element: <MapPage /> },
-  ...pages.map(({ path, title, board }) => ({ path, element: <BoardPage title={title} board={board} /> })),
   { path: '*', element: <NotFoundPage /> },
 ]

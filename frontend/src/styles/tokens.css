@@ -207,7 +207,7 @@ h1, h2, h3, .display {
   /* F-account, L-profile, M-notifications */
   --success-bg: #DDEBE8;                    /* "Подтверждён" badge, with --teal text */
   --danger-border: 1px solid #C98C6E;       /* "Удалить аккаунт" card */
-  --danger-ink: #8A3D26;
+  --danger-ink: #6E2F1C;                   /* darker than the board (#8A3D26) for 4.5:1 on the page gradient */
   --dot-read: 1px solid #9C8464;            /* a read notification */
 
   /* T-organizer, U-editor */
@@ -216,6 +216,11 @@ h1, h2, h3, .display {
   --badge-draft-bg: #EFE7DA;                /* "Черновик", with --ink-soft text */
   --editor-input-bg: #FBF6EC;               /* editor fields */
   --photo-cover: #7A4A32;                   /* "Главное фото" placeholder; the preview gradient ends in --ink-2 */
+
+  /* Accessibility (WCAG AA, 4.5:1 for text). --accent (#B5563A) reaches only 4.0:1 on --card, so text and the
+     backgrounds under light text use this darker terracotta; the logo, borders and fills keep --accent. */
+  --accent-text: #8E3F2B;
+  --focus-ring: 3px solid var(--accent-text);
 
   /* K-favorites */
   --empty-border: 1px dashed #9C8464;       /* the hint card where the list ends */

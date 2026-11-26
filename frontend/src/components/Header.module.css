@@ -92,13 +92,13 @@
 }
 
 .cabinet:hover {
-  background: var(--accent);
+  background: var(--accent-text);
   color: var(--card);
 }
 
 .cabinet:hover .avatar {
   background: var(--card);
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 /* E-buttons, "Фокус": 3 px terracotta border and a 2 px cream outline; the padding keeps the size unchanged */

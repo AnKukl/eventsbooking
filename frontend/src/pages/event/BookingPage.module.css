@@ -1,7 +1,7 @@
 /* design/pages/I-booking */
 .back {
   font-size: 14px;
-  color: var(--ink-soft);
+  color: var(--ink-label);
   text-decoration: none;
   display: inline-block;
   margin-bottom: 16px;
@@ -45,7 +45,7 @@
 
 .when {
   font-size: 12px;
-  color: var(--accent);
+  color: var(--accent-text);
   font-weight: 600;
 }
 
@@ -226,7 +226,7 @@
 }
 
 .pay:hover:not(:disabled) {
-  background: var(--accent);
+  background: var(--accent-text);
   color: var(--card);
 }
 
@@ -243,7 +243,7 @@
 
 .error {
   font-size: 13px;
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .done {
