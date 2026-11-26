@@ -43,6 +43,21 @@ export function useConfirm() {
   })
 }
 
+export type CancellationReason = 'CHANGED_PLANS' | 'SCHEDULE_CONFLICT' | 'FOUND_ALTERNATIVE' | 'TOO_EXPENSIVE' | 'OTHER'
+
+/** Cancels a booking; a confirmed one far enough ahead comes back as REFUND_PENDING. */
+export function useCancelBooking() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: ({ bookingId, reason }: { bookingId: number; reason: CancellationReason }) =>
+      api<Booking>(`/api/bookings/${bookingId}/cancel`, { method: 'POST', ...json({ reason }) }),
+    onSuccess: () => {
+      void client.invalidateQueries({ queryKey: ['bookings'] })
+      void client.invalidateQueries({ queryKey: ['events'] })
+    },
+  })
+}
+
 export function useJoinWaitlist() {
   return useMutation({
     mutationFn: ({ eventId, channel }: { eventId: number; channel: WaitlistChannel }) =>

@@ -9,9 +9,10 @@ import styles from './AuthPage.module.css'
 
 type Mode = 'login' | 'register'
 
+// registration has always required 8+ characters, so every account can pass the same check at login
 const loginSchema = z.object({
-  email: z.string().trim().min(1, 'Введите email'),
-  password: z.string().min(1, 'Введите пароль'),
+  email: z.string().trim().min(1, 'Введите email').email('Проверьте email'),
+  password: z.string().min(1, 'Введите пароль').min(8, 'Пароль не короче 8 символов'),
 })
 
 // the same limits as RegisterRequest on the server
@@ -151,14 +152,14 @@ export function AuthPage({ mode }: { mode: Mode }) {
             />
             {fieldErrors.password && <span className={styles.fieldError}>{fieldErrors.password}</span>}
           </label>
-          <button className={styles.submit} type="submit" disabled={action.isPending}>
-            {TEXT[mode].submit}
-          </button>
           {serverError && (
             <span className={styles.error} role="alert">
               {serverError}
             </span>
           )}
+          <button className={styles.submit} type="submit" disabled={action.isPending}>
+            {TEXT[mode].submit}
+          </button>
         </form>
 
         <span className={styles.legal}>

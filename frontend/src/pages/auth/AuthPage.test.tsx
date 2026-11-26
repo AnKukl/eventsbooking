@@ -66,7 +66,33 @@ describe('AuthPage (S-auth)', () => {
     expect(target('', { from: '/map' })).toBe('/map')
   })
 
-  it('a wrong password is reported under the button', async () => {
+  it('login checks the email and the 8-character password before sending', async () => {
+    const calls = mockApi({})
+    renderAt('/login', <AuthPage mode="login" />)
+
+    await fill('anna', 'short')
+    await userEvent.click(screen.getByRole('button', { name: 'Войти' }))
+
+    expect(screen.getByText('Проверьте email')).toBeInTheDocument()
+    expect(screen.getByText('Пароль не короче 8 символов')).toBeInTheDocument()
+    expect(calls).toEqual([])
+  })
+
+  it('nothing about the session is kept in the browser storage: the cookie is HttpOnly', async () => {
+    localStorage.clear()
+    sessionStorage.clear()
+    mockApi({ 'POST /api/auth/login': { body: { expiresIn: 900 } } })
+    renderAt('/login', <AuthPage mode="login" />)
+
+    await fill('anna@example.com', 'correct-horse')
+    await userEvent.click(screen.getByRole('button', { name: 'Войти' }))
+
+    await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent('/'))
+    expect(localStorage.length).toBe(0)
+    expect(sessionStorage.length).toBe(0)
+  })
+
+  it('a wrong password is reported under the fields', async () => {
     mockApi({ 'POST /api/auth/login': { status: 401, body: { status: 401, detail: 'Invalid email or password' } } })
     renderAt('/login', <AuthPage mode="login" />)
 
