@@ -308,6 +308,22 @@ export interface paths {
         patch: operations["update_2"];
         trace?: never;
     };
+    "/api/settings/booking": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["settings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/organizer/events/{id}/bookings": {
         parameters: {
             query?: never;
@@ -617,6 +633,14 @@ export interface components {
             city?: string;
             emailVerified?: boolean;
         };
+        BookingSettings: {
+            /** Format: int32 */
+            maxSeatsPerBooking?: number;
+            /** Format: int64 */
+            holdDurationSeconds?: number;
+            /** Format: int64 */
+            cancellationNoticeHours?: number;
+        };
         Pageable: {
             /** Format: int32 */
             page?: number;
@@ -720,6 +744,8 @@ export interface components {
                 field?: string;
                 message?: string;
             }[];
+            /** @description 409 only: a stable code such as EVENT_IS_FULL */
+            code?: string;
         };
     };
     responses: never;
@@ -1347,6 +1373,26 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ProfileResponse"];
+                };
+            };
+        };
+    };
+    settings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["BookingSettings"];
                 };
             };
         };

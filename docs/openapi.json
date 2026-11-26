@@ -763,6 +763,24 @@
         }
       }
     },
+    "/api/settings/booking" : {
+      "get" : {
+        "tags" : [ "booking-settings-controller" ],
+        "operationId" : "settings",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/BookingSettings"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/organizer/events/{id}/bookings" : {
       "get" : {
         "tags" : [ "organizer-event-controller" ],
@@ -1562,6 +1580,23 @@
           }
         }
       },
+      "BookingSettings" : {
+        "type" : "object",
+        "properties" : {
+          "maxSeatsPerBooking" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "holdDurationSeconds" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "cancellationNoticeHours" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }
+      },
       "Pageable" : {
         "type" : "object",
         "properties" : {
@@ -1839,6 +1874,10 @@
                 }
               }
             }
+          },
+          "code" : {
+            "type" : "string",
+            "description" : "409 only: a stable code such as EVENT_IS_FULL"
           }
         }
       }

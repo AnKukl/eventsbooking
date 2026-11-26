@@ -132,7 +132,8 @@ class BookingControllerTest {
     void businessConflictsAre409ProblemDetails() throws Exception {
         when(service.book(5L, 7L, 1, null)).thenThrow(new EventFullException(5L));
         book("{\"eventId\":5}", null).andExpect(status().isConflict())
-                .andExpect(jsonPath("$.title").value("Event is full"));
+                .andExpect(jsonPath("$.title").value("Event is full"))
+                .andExpect(jsonPath("$.code").value("EVENT_IS_FULL"));
 
         when(service.book(6L, 7L, 1, null)).thenThrow(new AlreadyBookedException(6L, 7L));
         book("{\"eventId\":6}", null).andExpect(status().isConflict());

@@ -190,6 +190,12 @@ h1, h2, h3, .display {
   --preview-bg: #2B2A27;                    /* behind the photo while it loads */
   --preview-text: #3A2F26;                  /* the short description */
 
+  /* O-event, I-booking, P-modals */
+  --line: #D9C7AE;                          /* thin separators inside cards */
+  --text-warm: #7A4A32;                     /* the long description on I-booking */
+  --radius-3xl: 22px;                       /* the event photo */
+  --modal-shadow: 0 20px 40px rgba(20, 12, 6, 0.45);
+
   /* K-favorites */
   --empty-border: 1px dashed #9C8464;       /* the hint card where the list ends */
   --ink-soft: #5A4632;                      /* the hint text; "← Все события" (O-event) */

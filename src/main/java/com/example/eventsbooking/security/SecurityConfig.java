@@ -63,6 +63,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/events", "/api/events/*", "/api/events/*/preview").permitAll()
                         // uploaded pictures are shown on public pages; the cabinet is for organizers only
                         .requestMatchers(HttpMethod.GET, "/api/media/*").permitAll()
+                        // the booking rules (seat limit, hold time) are shown before signing in
+                        .requestMatchers(HttpMethod.GET, "/api/settings/booking").permitAll()
                         .requestMatchers("/api/organizer/**").hasRole(ROLE_ORGANIZER)
                         .requestMatchers(HttpMethod.POST, "/api/events").hasRole(ROLE_ORGANIZER)
                         .requestMatchers(HttpMethod.PUT, "/api/events/*").hasRole(ROLE_ORGANIZER)

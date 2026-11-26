@@ -34,11 +34,14 @@ type Handler = Reply | ((init: RequestInit | undefined, url: URL) => Reply | Pro
 
 /** Replaces fetch: each handler answers "METHOD /path" (the query string is passed to a function handler); else 404. */
 export function mockApi(handlers: Record<string, Handler>) {
-  const calls: { method: string; path: string; body?: unknown }[] = []
+  const calls: { method: string; path: string; body?: unknown; headers?: Record<string, string> }[] = []
   const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = new URL(String(input), 'http://localhost')
     const method = init?.method ?? 'GET'
-    calls.push({ method, path: url.pathname + url.search, body: init?.body ? JSON.parse(String(init.body)) : undefined })
+    const call: (typeof calls)[number] = { method, path: url.pathname + url.search, body: init?.body ? JSON.parse(String(init.body)) : undefined }
+    const key = new Headers(init?.headers).get('Idempotency-Key')
+    if (key) call.headers = { 'Idempotency-Key': key }
+    calls.push(call)
     const handler = handlers[`${method} ${url.pathname}`]
     const reply = typeof handler === 'function' ? await handler(init, url) : (handler ?? { status: 404 })
     const status = reply.status ?? 200

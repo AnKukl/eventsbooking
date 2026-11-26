@@ -91,6 +91,8 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
     ProblemDetail handleConflict(ConflictException ex) {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
         problem.setTitle(ex.getTitle());
+        // a stable code for clients ("Event is full" -> EVENT_IS_FULL), so they never parse the English title
+        problem.setProperty("code", ex.getTitle().trim().toUpperCase(java.util.Locale.ROOT).replaceAll("[^A-Z0-9]+", "_"));
         return problem;
     }
 

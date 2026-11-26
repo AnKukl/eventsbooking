@@ -55,6 +55,7 @@ class OpenApiConfig {
         schema.addProperty("detail", new StringSchema());
         schema.addProperty("instance", new StringSchema().format("uri"));
         schema.addProperty("errors", new ArraySchema().items(violation));
+        schema.addProperty("code", new StringSchema().description("409 only: a stable code such as EVENT_IS_FULL"));
         return schema;
     }
 }
