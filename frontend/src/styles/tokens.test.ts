@@ -27,6 +27,12 @@ describe('design tokens', () => {
     expect(offenders).toEqual([])
   })
 
+  it('give Cyrillic headings a serif that has Cyrillic: Fraunces has none', () => {
+    const fonts = [...frontendFile('src/styles/tokens.css').matchAll(/--font-display:\s*([^;]+);/g)].map((m) => m[1])
+    expect(fonts.at(-1)).toBe('"Fraunces", "Literata", serif')
+    expect(frontendFile('index.html')).toMatch(/family=Literata:/)
+  })
+
   it('index.html has no colours either', () => {
     expect(COLOUR.test(frontendFile('index.html'))).toBe(false)
   })

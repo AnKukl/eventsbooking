@@ -225,4 +225,8 @@ h1, h2, h3, .display {
   /* K-favorites */
   --empty-border: 1px dashed #9C8464;       /* the hint card where the list ends */
   --ink-soft: #5A4632;                      /* the hint text; "← Все события" (O-event) */
+
+  /* Fraunces has no Cyrillic, so Russian headings fell back to the system serif (Times). The browser picks a font per
+     letter: Latin stays in Fraunces, Cyrillic is set in Literata, a book serif with optical sizes like Fraunces. */
+  --font-display: "Fraunces", "Literata", serif;
 }
